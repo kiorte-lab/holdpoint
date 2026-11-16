@@ -3,10 +3,10 @@
   "version": "0.7.0",
   "description": "Approve Claude Code prompts and reply to finished turns from your Garmin watch or phone.",
   "author": {
-    "name": "Simon Cassford"
+    "name": "Kiorte Lab"
   },
-  "homepage": "https://github.com/simoncassford-lab/holdpoint",
-  "repository": "https://github.com/simoncassford-lab/holdpoint",
+  "homepage": "https://github.com/kiorte-lab/holdpoint",
+  "repository": "https://github.com/kiorte-lab/holdpoint",
   "license": "MIT",
   "keywords": [
     "garmin",

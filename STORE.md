@@ -11,7 +11,7 @@ Copy these into the Connect IQ developer dashboard (apps.garmin.com/developer) w
 | Category | Tools / Productivity |
 | Price | Free |
 | Privacy policy URL | https://holdpoint-relay.kiorte.workers.dev/privacy |
-| Support / website URL | https://github.com/simoncassford-lab/holdpoint |
+| Support / website URL | https://github.com/kiorte-lab/holdpoint |
 | Permissions shown | Communications (talks to the relay), Background (checks for waiting requests every 5 minutes) |
 
 ## Short description (one line)
@@ -29,7 +29,7 @@ Step away from your desk while Claude Code, Codex, GitHub Copilot CLI or Antigra
 - Works with the Claude Code terminal, desktop app and VS Code, plus Codex, Copilot CLI and Antigravity CLI.
 - Your watch talks to the internet through your phone, so your computer can be anywhere.
 
-**Setup takes a minute.** Install the free Holdpoint plugin in Claude Code (`/plugin install holdpoint --marketplace simoncassford-lab/holdpoint`) or the command-line tool, run `holdpoint pair`, and type the 6-digit code from your watch. Full guide: github.com/simoncassford-lab/holdpoint
+**Setup takes a minute.** Install the free Holdpoint plugin in Claude Code (`/plugin install holdpoint --marketplace kiorte-lab/holdpoint`) or the command-line tool, run `holdpoint pair`, and type the 6-digit code from your watch. Full guide: github.com/kiorte-lab/holdpoint
 
 **Privacy:** no account and no tracking. Only short summaries (the command or a few lines of your agent's message) pass through the relay, which keeps them in memory and deletes them within an hour. Your code stays on your computer. You can also run your own relay.
 
@@ -51,4 +51,4 @@ Upload the files in `store/` in this order (Forerunner 965, 454×454):
 
 ## Hero image / icon
 
-The launcher icon is built into the app. For the store's app icon, use `icon.png` from the repo root.
+The launcher icon is built into the app. For the store's app icon, use `store/cover-500.png` (500×500).

@@ -11,7 +11,7 @@ Claude Code / Codex ──PermissionRequest hook──▶ relay ◀── phone 
 In Claude Code:
 
 ```
-/plugin install holdpoint --marketplace simoncassford-lab/holdpoint
+/plugin install holdpoint --marketplace kiorte-lab/holdpoint
 /holdpoint:pair
 ```
 

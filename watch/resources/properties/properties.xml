@@ -6,4 +6,5 @@
     <property id="lastCount" type="number">0</property>
     <property id="away" type="boolean">false</property>
     <property id="presetsSent" type="string"></property>
+    <property id="pairNotice" type="string"></property>
 </properties>

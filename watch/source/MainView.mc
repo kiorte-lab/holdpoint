@@ -67,6 +67,11 @@ class MainView extends WatchUi.View {
 
     // Settings changed in the Garmin Connect app: claim a pairing code, push reply buttons.
     function syncSettings() as Void {
+        var pn = Application.Properties.getValue("pairNotice");
+        if (pn instanceof String && pn.length() > 0) {
+            notice = pn as String;
+            Application.Properties.setValue("pairNotice", "");
+        }
         var code = Application.Properties.getValue("pairingCode");
         if (!claiming && code instanceof String && code.length() > 0) {
             var digits = digitsOnly(code as String);
@@ -451,7 +456,9 @@ class MainView extends WatchUi.View {
             ["or enter the PC's code", Graphics.FONT_XTINY, DIM],
             ["in Garmin Connect", Graphics.FONT_XTINY, DIM]
         ];
-        if (showPair) {
+        if (notice.length() > 0) {
+            items.add([notice, Graphics.FONT_XTINY, GREEN]);
+        } else if (showPair) {
             items.add([touch ? "Tap when done" : "START when done", Graphics.FONT_XTINY, ORANGE]);
         }
         stack(dc, items, top, bottom);
