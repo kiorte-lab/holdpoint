@@ -1,0 +1,11 @@
+<settings>
+    <setting propertyKey="@Properties.pairingCode" title="@Strings.PairTitle" prompt="@Strings.PairPrompt">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+    <setting propertyKey="@Properties.presetsText" title="@Strings.PresetsTitle" prompt="@Strings.PresetsPrompt">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+    <setting propertyKey="@Properties.relayUrl" title="@Strings.RelayTitle">
+        <settingConfig type="alphaNumeric"/>
+    </setting>
+</settings>

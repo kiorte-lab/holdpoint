@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wristgate</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1d24; --line:#2a2f3a; --text:#e8eaef; --dim:#8b92a3;
+          --ok:#2fbf71; --no:#e5484d; --accent:#d97757; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.4 system-ui, -apple-system, sans-serif; }
+  main { max-width:520px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; margin:4px 0 16px; display:flex; align-items:center; gap:8px; }
+  h1 .dot { width:10px; height:10px; border-radius:50%; background:var(--dim); }
+  h1 .dot.live { background:var(--ok); }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--dim); margin:24px 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .tool { font-size:12px; color:var(--accent); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+  .summary { font-family:ui-monospace, Menlo, monospace; font-size:15px; margin:6px 0; word-break:break-word; }
+  .meta { font-size:12px; color:var(--dim); }
+  details { margin-top:6px; } summary { color:var(--dim); font-size:13px; cursor:pointer; }
+  pre { white-space:pre-wrap; word-break:break-word; font-size:12px; background:#0b0d11; padding:8px; border-radius:8px; max-height:240px; overflow:auto; }
+  .btns { display:flex; gap:10px; margin-top:12px; }
+  button { flex:1; border:0; border-radius:10px; padding:14px; font-size:16px; font-weight:600; color:#fff; cursor:pointer; }
+  .allow { background:var(--ok); } .deny { background:var(--no); }
+  .ghost { background:transparent; border:1px solid var(--line); color:var(--text); padding:10px; font-size:14px; font-weight:500; }
+  button:disabled { opacity:.5; }
+  .locked { font-size:12px; color:var(--no); margin-top:8px; }
+  .code { font:700 34px ui-monospace, Menlo, monospace; letter-spacing:.2em; margin:6px 0; }
+  code.cmd { display:block; background:#0b0d11; padding:10px; border-radius:8px; font-size:13px; word-break:break-all; margin-top:6px; }
+  .empty { color:var(--dim); text-align:center; padding:24px 0; }
+  input { width:100%; background:#0b0d11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; font-size:15px; }
+  .row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+  .err { color:var(--no); font-size:13px; }
+  .away { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .away strong { font-size:17px; } .away .meta { margin-top:2px; }
+  .switch { position:relative; width:58px; height:34px; flex:0 0 auto; }
+  .switch input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; inset:0; background:var(--line); border-radius:34px; transition:.2s; cursor:pointer; }
+  .slider:before { content:""; position:absolute; width:26px; height:26px; left:4px; top:4px; background:#fff; border-radius:50%; transition:.2s; }
+  input:checked + .slider { background:var(--accent); } input:checked + .slider:before { transform:translateX(24px); }
+  .card.stop { border-color:#2f5d46; }
+  .tool.done { color:var(--ok); }
+  .presets { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .presets button { background:#24402f; padding:12px 8px; font-size:14px; }
+  .free { display:flex; gap:8px; margin-top:8px; } .free button { flex:0 0 auto; background:var(--accent); padding:10px 14px; font-size:14px; }
+  textarea { width:100%; min-height:110px; background:#0b0d11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:10px; font:14px/1.4 system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<main>
+  <h1><span class="dot" id="dot"></span> Wristgate</h1>
+  <div id="err" class="err"></div>
+
+  <div class="card away">
+    <div><strong id="awayLabel">At the desk</strong><div class="meta" id="awayHint">Prompts stay in the terminal.</div></div>
+    <label class="switch"><input type="checkbox" id="awayToggle"><span class="slider"></span></label>
+  </div>
+
+  <h2>Waiting for you</h2>
+  <div id="pending"><div class="empty">Nothing waiting.</div></div>
+
+  <h2>Pair a machine</h2>
+  <div class="card">
+    <div class="meta">On the machine running Claude Code or Codex, in the wristgate folder:</div>
+    <div class="code" id="code">······</div>
+    <code class="cmd" id="cmd"></code>
+    <div class="row" style="margin-top:10px">
+      <span class="meta" id="codeExp"></span>
+      <button class="ghost" id="newCode" style="flex:0 0 auto">New code</button>
+    </div>
+    <div class="meta" style="margin:12px 0 6px">Or, if your PC is showing a code (from <code>wristgate pair</code>), enter it here:</div>
+    <div class="row"><input id="claimCode" inputmode="numeric" maxlength="7" placeholder="123 456"><button class="ghost" id="claimBtn" style="flex:0 0 auto">Pair</button></div>
+    <div class="meta" id="claimMsg" style="margin-top:6px"></div>
+  </div>
+
+  <h2>Add a watch</h2>
+  <div class="card">
+    <div class="meta" style="margin-bottom:6px">Open Wristgate on your watch and enter the code it shows. The watch then shares this queue.</div>
+    <div class="row"><input id="linkCode" inputmode="numeric" maxlength="6" placeholder="6-digit code from the watch"><button class="ghost" id="linkBtn" style="flex:0 0 auto">Link</button></div>
+    <div class="meta" id="linkMsg" style="margin-top:6px"></div>
+  </div>
+
+  <h2>Paired machines</h2>
+  <div id="clients"><div class="empty">None yet.</div></div>
+
+  <h2>Reply buttons</h2>
+  <div class="card">
+    <div class="meta" style="margin-bottom:6px">One per line, up to 8. These show on "finished" cards and on the watch.</div>
+    <textarea id="presets"></textarea>
+    <div class="row" style="margin-top:8px"><span class="meta" id="presetsSaved"></span><button class="ghost" id="savePresets" style="flex:0 0 auto">Save</button></div>
+  </div>
+
+  <h2>Phone notifications (ntfy)</h2>
+  <div class="card">
+    <div class="meta" style="margin-bottom:6px">Subscribe to this topic in the ntfy app. Only "Approval waiting" or "Agent finished" is sent, never the command or Claude's reply.</div>
+    <div class="row"><input id="topic" placeholder="topic name, e.g. wg-k3j9x…"><button class="ghost" id="saveTopic" style="flex:0 0 auto">Save</button></div>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return mem[k] || null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch { mem[k] = v; } },
+  };
+  const mem = {};
+  let token = store.get('wg_token');
+  let pairExpires = 0;
+
+  async function api(path, opts = {}) {
+    const r = await fetch(path, { ...opts, headers: { 'content-type': 'application/json',
+      ...(token ? { authorization: 'Bearer ' + token } : {}) } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.error || r.status), { status: r.status });
+    return j;
+  }
+
+  function showCode(j) {
+    $('code').textContent = j.pairCode;
+    pairExpires = j.pairExpires;
+    $('cmd').textContent = `node cli/wristgate.js pair ${j.pairCode} --relay ${location.origin}`;
+  }
+
+  async function register() {
+    const j = await api('/api/devices', { method: 'POST', body: JSON.stringify({ name: 'Phone' }) });
+    token = j.deviceToken; store.set('wg_token', token);
+    showCode(j);
+  }
+
+  async function newCode() { showCode(await api('/api/device/pair-code', { method: 'POST' })); }
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+  async function decide(id, decision, btns, reply) {
+    btns.forEach((b) => (b.disabled = true));
+    try { await api(`/api/device/requests/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision, reply }) }); }
+    catch (e) { $('err').textContent = 'Could not ' + decision + ': ' + e.message; }
+    refresh();
+  }
+
+  let lastIds = '', presets = [];
+  const agentName = (r) => (r.agent === 'codex' ? 'Codex' : 'Claude Code');
+  function renderPending(list, serverTime) {
+    const ids = list.map((r) => r.id).join(',') + '|' + presets.join('\u0001');
+    if (ids === lastIds) { updateTimers(serverTime); return; }
+    // Don't wipe a reply someone is halfway through typing.
+    if (document.activeElement && document.activeElement.classList.contains('freeText')) { updateTimers(serverTime); return; }
+    lastIds = ids;
+    const box = $('pending');
+    if (!list.length) { box.innerHTML = '<div class="empty">Nothing waiting.</div>'; return; }
+    box.innerHTML = list.map((r) => r.kind === 'stop' ? `
+      <div class="card stop" data-id="${esc(r.id)}" data-exp="${r.expires}">
+        <div class="tool done">${agentName(r)} · finished</div>
+        <div class="summary" style="font-family:inherit">${esc(r.summary)}</div>
+        <div class="meta">${esc(r.clientName)}${r.cwd ? ' · ' + esc(r.cwd) : ''} · <span class="left"></span></div>
+        ${r.detail && r.detail.length > r.summary.length ? `<details><summary>Full reply</summary><pre>${esc(r.detail)}</pre></details>` : ''}
+        <div class="presets">${presets.map((p, i) => `<button data-p="${i}">${esc(p)}</button>`).join('')}</div>
+        <div class="free"><input class="freeText" placeholder="Or type a reply…" maxlength="500"><button class="send">Send</button></div>
+        <div class="btns"><button class="ghost dismiss">Done for now</button></div>
+      </div>` : `
+      <div class="card" data-id="${esc(r.id)}" data-exp="${r.expires}">
+        <div class="tool">${agentName(r)} · ${esc(r.tool)}</div>
+        <div class="summary">${esc(r.summary)}</div>
+        <div class="meta">${esc(r.clientName)}${r.cwd ? ' · ' + esc(r.cwd) : ''} · <span class="left"></span></div>
+        ${r.detail && r.detail !== r.summary ? `<details><summary>Full detail</summary><pre>${esc(r.detail)}</pre></details>` : ''}
+        <div class="btns"><button class="deny">Deny</button>${r.locked ? '' : '<button class="allow">Approve</button>'}</div>
+        ${r.locked ? '<div class="locked">Too risky to approve remotely. Deny it, or answer in the terminal.</div>' : ''}
+      </div>`).join('');
+    box.querySelectorAll('.card').forEach((card) => {
+      const btns = [...card.querySelectorAll('button')];
+      const id = card.dataset.id;
+      if (card.classList.contains('stop')) {
+        card.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => decide(id, 'reply', btns, presets[b.dataset.p])));
+        const send = () => { const t = card.querySelector('.freeText').value.trim(); if (t) decide(id, 'reply', btns, t); };
+        card.querySelector('.send').onclick = send;
+        card.querySelector('.freeText').onkeydown = (e) => { if (e.key === 'Enter') send(); };
+        card.querySelector('.dismiss').onclick = () => decide(id, 'dismiss', btns);
+      } else {
+        card.querySelector('.allow')?.addEventListener('click', () => decide(id, 'allow', btns));
+        card.querySelector('.deny').onclick = () => decide(id, 'deny', btns);
+      }
+    });
+    updateTimers(serverTime);
+  }
+
+  function showAway(away) {
+    $('awayToggle').checked = away;
+    $('awayLabel').textContent = away ? 'Away' : 'At the desk';
+    $('awayHint').textContent = away ? 'Prompts and "finished" cards come here.' : 'Prompts stay in the terminal.';
+  }
+  let skew = 0;
+  function updateTimers(serverTime) {
+    if (serverTime) skew = serverTime - Date.now();
+    document.querySelectorAll('#pending .card').forEach((c) => {
+      const s = Math.max(0, Math.round((Number(c.dataset.exp) - Date.now() - skew) / 1000));
+      c.querySelector('.left').textContent = s + 's left';
+    });
+    if (pairExpires) {
+      const s = Math.max(0, Math.round((pairExpires - Date.now() - skew) / 1000));
+      $('codeExp').textContent = s ? `expires in ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : 'expired';
+    }
+  }
+
+  async function loadMe() {
+    const me = await api('/api/device/me');
+    $('topic').value = me.ntfyTopic || '';
+    if (document.activeElement !== $('presets')) $('presets').value = (me.presets || []).join('\n');
+    $('clients').innerHTML = me.clients.length ? me.clients.map((c) => `
+      <div class="card row"><div><div>${esc(c.name)}</div><div class="meta">paired ${new Date(c.created).toLocaleDateString()}</div></div>
+      <button class="ghost" data-c="${esc(c.id)}" style="flex:0 0 auto">Unpair</button></div>`).join('')
+      : '<div class="empty">None yet.</div>';
+    $('clients').querySelectorAll('button').forEach((b) => b.onclick = async () => {
+      await api('/api/device/unpair', { method: 'POST', body: JSON.stringify({ clientId: b.dataset.c }) });
+      loadMe();
+    });
+  }
+
+  let clientCount = -1;
+  async function refresh() {
+    try {
+      const j = await api('/api/device/pending');
+      $('dot').classList.add('live'); $('err').textContent = '';
+      presets = j.presets || [];
+      showAway(!!j.away);
+      renderPending(j.pending, j.serverTime);
+      if (clientCount !== -1 && j.clients !== clientCount) { loadMe(); if (j.clients > clientCount) newCode(); }
+      clientCount = j.clients;
+    } catch (e) {
+      $('dot').classList.remove('live');
+      if (e.status === 401) { token = null; await register(); }
+      else $('err').textContent = 'Relay unreachable';
+    }
+  }
+
+  $('newCode').onclick = () => newCode().catch((e) => ($('err').textContent = e.message));
+  $('awayToggle').onchange = async (e) => {
+    showAway(e.target.checked);
+    try { await api('/api/device/settings', { method: 'POST', body: JSON.stringify({ away: e.target.checked }) }); refresh(); }
+    catch (err) { $('err').textContent = 'Could not change mode'; showAway(!e.target.checked); }
+  };
+  $('savePresets').onclick = async () => {
+    const list = $('presets').value.split('\n').map((x) => x.trim()).filter(Boolean);
+    const j = await api('/api/device/settings', { method: 'POST', body: JSON.stringify({ presets: list }) });
+    $('presets').value = j.presets.join('\n'); $('presetsSaved').textContent = 'Saved'; lastIds = '';
+    setTimeout(() => ($('presetsSaved').textContent = ''), 2000);
+  };
+  $('claimBtn').onclick = async () => {
+    const code = $('claimCode').value.replace(/\D/g, '');
+    try {
+      const j = await api('/api/device/claim', { method: 'POST', body: JSON.stringify({ code }) });
+      $('claimMsg').textContent = 'Paired ' + j.name + '.'; $('claimCode').value = ''; loadMe();
+    } catch (e) { $('claimMsg').textContent = 'Could not pair: ' + e.message; }
+  };
+  $('linkBtn').onclick = async () => {
+    const code = $('linkCode').value.trim();
+    try {
+      const j = await api('/api/device/link', { method: 'POST', body: JSON.stringify({ code }) });
+      $('linkMsg').textContent = 'Linked ' + j.linked + '.'; $('linkCode').value = ''; loadMe();
+    } catch (e) { $('linkMsg').textContent = 'Could not link: ' + e.message; }
+  };
+  $('saveTopic').onclick = () => api('/api/device/settings', { method: 'POST',
+    body: JSON.stringify({ ntfyTopic: $('topic').value.trim() }) }).then(loadMe);
+
+  (async () => {
+    try {
+      if (!token) await register(); else await newCode();
+      await loadMe();
+    } catch (e) { if (e.status === 401) { token = null; await register(); await loadMe(); } }
+    refresh();
+    setInterval(refresh, 2000);
+    setInterval(() => updateTimers(), 1000);
+    setInterval(loadMe, 15000);
+  })();
+})();
+</script>
+</body>
+</html>

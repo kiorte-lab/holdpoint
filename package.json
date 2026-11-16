@@ -1,0 +1,15 @@
+{
+  "name": "wristgate",
+  "version": "0.6.0",
+  "description": "Approve Claude Code and Codex permission prompts from your watch or phone",
+  "license": "MIT",
+  "bin": { "wristgate": "cli/wristgate.js" },
+  "files": ["cli/", "relay/"],
+  "scripts": {
+    "relay": "node relay/server.js",
+    "test": "node --test test/*.test.js",
+    "test:worker": "node --test test/worker.smoke.js",
+    "deploy": "wrangler deploy"
+  },
+  "engines": { "node": ">=18" }
+}

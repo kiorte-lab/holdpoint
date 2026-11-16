@@ -1,0 +1,17 @@
+name = "wristgate-relay"
+main = "worker/index.js"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = false
+
+[[durable_objects.bindings]]
+name = "RELAY"
+class_name = "Relay"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Relay"]
+
+# [vars]
+# PUBLIC_URL = "https://wristgate.example.com"

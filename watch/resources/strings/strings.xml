@@ -1,0 +1,8 @@
+<strings>
+    <string id="AppName">Wristgate</string>
+    <string id="RelayTitle">Relay URL (advanced)</string>
+    <string id="PairTitle">Pairing code</string>
+    <string id="PairPrompt">Run "wristgate pair" on your PC and type the 6-digit code it shows</string>
+    <string id="PresetsTitle">Reply buttons</string>
+    <string id="PresetsPrompt">Comma-separated, up to 8, e.g. Continue, Run the tests</string>
+</strings>

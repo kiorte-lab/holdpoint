@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/cli/wristgate.js\" hook --agent claude --plugin",
+            "timeout": 150
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/cli/wristgate.js\" hook-stop --agent claude --plugin",
+            "timeout": 930
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/cli/wristgate.js\" hook-prompt --agent claude --plugin",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
