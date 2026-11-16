@@ -12,10 +12,10 @@ In Claude Code:
 
 ```
 /plugin install wristgate --marketplace simoncassford-lab/wristgate
-/wristgate pair
+/wristgate:pair
 ```
 
-`/wristgate pair` shows a 6-digit code. Enter it in Garmin Connect (your watch > Connect IQ apps > Wristgate > Settings > Pairing code) or on the phone page, and pairing finishes by itself. Other commands: `/wristgate status`, `/wristgate on`, `/wristgate off`, `/wristgate unpair`.
+`/wristgate:pair` shows a 6-digit code. Enter it in Garmin Connect (your watch > Connect IQ apps > Wristgate > Settings > Pairing code) or on the phone page, and pairing finishes by itself. Other commands: `/wristgate:status`, `/wristgate:on`, `/wristgate:off`, `/wristgate:unpair`.
 
 For Codex, run `node cli/wristgate.js agents both` once after pairing.
 

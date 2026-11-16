@@ -92,5 +92,6 @@ test('plugin files are well formed and point at the CLI', () => {
   }
   const pj = JSON.parse(fs.readFileSync(path.join(ROOT, '.claude-plugin', 'plugin.json'), 'utf8'));
   assert.equal(pj.version, JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version);
-  assert.match(fs.readFileSync(path.join(ROOT, 'commands', 'wristgate.md'), 'utf8'), /--plugin --detach/);
+  for (const c of ['pair', 'status', 'on', 'off', 'unpair'])
+    assert.match(fs.readFileSync(path.join(ROOT, 'commands', c + '.md'), 'utf8'), new RegExp(`wristgate\\.js" ${c} --plugin --detach`));
 });
