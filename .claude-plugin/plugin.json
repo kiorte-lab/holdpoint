@@ -1,6 +1,6 @@
 {
   "name": "wristgate",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Approve Claude Code prompts and reply to finished turns from your Garmin watch or phone.",
   "author": {
     "name": "Simon Cassford"

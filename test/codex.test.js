@@ -102,7 +102,7 @@ test('off keeps the Codex hook definition unchanged (no re-trust needed)', async
 
 test('--agent codex only, and unknown agents are rejected', async () => {
   const d2 = await (await fetch(base + '/api/devices', { method: 'POST', body: '{}' })).json();
-  assert.equal((await runCli(['pair', d2.pairCode, '--relay', base, '--agent', 'gemini'])).code, 1);
+  assert.equal((await runCli(['pair', d2.pairCode, '--relay', base, '--agent', 'nonsense'])).code, 1);
 });
 
 test('agents command switches agents without re-pairing', async () => {
@@ -114,7 +114,7 @@ test('agents command switches agents without re-pairing', async () => {
   assert.match(r2.out, /Hooked up: Codex/);
   assert.equal(JSON.parse(fs.readFileSync(codexFile(), 'utf8')).hooks.PermissionRequest.length, 1);
   assert.equal(JSON.parse(fs.readFileSync(codexFile(), 'utf8')).hooks.Stop.length, 1);
-  assert.equal((await runCli(['agents', 'gemini'])).code, 1);
+  assert.equal((await runCli(['agents', 'nonsense'])).code, 1);
 });
 
 test('unpair removes both hooks and keeps the user\'s own', async () => {

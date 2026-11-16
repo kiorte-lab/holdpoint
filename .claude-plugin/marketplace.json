@@ -8,7 +8,7 @@
       "name": "wristgate",
       "source": "./",
       "description": "Approve prompts and reply to Claude from your Garmin watch.",
-      "version": "0.6.1"
+      "version": "0.7.0"
     }
   ],
   "description": "Wristgate: approve prompts and reply to your coding agent from a Garmin watch."

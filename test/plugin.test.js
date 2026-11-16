@@ -52,7 +52,7 @@ test('/wristgate pair (detached) prints a code at once and finishes in the backg
   assert.equal(r.code, 0, r.out);
   assert.ok(Date.now() - t0 < 5000, 'must not wait for the claim');
   const code = r.out.match(/Pairing code:\s+(\d{3}) (\d{3})/).slice(1).join('');
-  assert.match(r.out, /\/wristgate status/);
+  assert.match(r.out, /\/wristgate:status/);
   assert.match((await run(['status'])).out, /Waiting for the pairing code/);
   assert.equal((await dev('POST', '/api/device/claim', { code })).status, 200);
   let cfg;

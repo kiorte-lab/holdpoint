@@ -1,6 +1,6 @@
 {
   "name": "wristgate",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Approve Claude Code and Codex permission prompts from your watch or phone",
   "license": "MIT",
   "bin": {

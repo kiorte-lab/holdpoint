@@ -354,7 +354,10 @@ class MainView extends WatchUi.View {
         }
 
         var isStop = "stop".equals(r["kind"]);
-        var agent = "codex".equals(r["agent"]) ? "Codex" : "Claude";
+        var agent = "Claude";
+        if ("codex".equals(r["agent"])) { agent = "Codex"; }
+        else if ("copilot".equals(r["agent"])) { agent = "Copilot"; }
+        else if ("antigravity".equals(r["agent"])) { agent = "Antigravity"; }
         var head = isStop ? agent + " · finished" : agent + " · " + (r["tool"] as String);
         dc.setColor(isStop ? GREEN : ORANGE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(w / 2, h * 0.21, Graphics.FONT_XTINY, head, Graphics.TEXT_JUSTIFY_CENTER);

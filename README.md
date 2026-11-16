@@ -17,7 +17,11 @@ In Claude Code:
 
 `/wristgate:pair` shows a 6-digit code. Enter it in Garmin Connect (your watch > Connect IQ apps > Wristgate > Settings > Pairing code) or on the phone page, and pairing finishes by itself. Other commands: `/wristgate:status`, `/wristgate:on`, `/wristgate:off`, `/wristgate:unpair`.
 
-For Codex, run `node cli/wristgate.js agents both` once after pairing.
+Other agents: run `node cli/wristgate.js agents <list>` once after pairing, e.g. `agents claude,codex,copilot,antigravity` (or `all`). Supported:
+- **Claude Code** (terminal, desktop app, VS Code): approvals, finished cards, replies.
+- **Codex** (ChatGPT): the same. Run `/hooks` in Codex once to trust the hooks.
+- **GitHub Copilot CLI**: the same. The hooks go in `~/.copilot/hooks/wristgate.json`.
+- **Antigravity CLI** (Gemini CLI's successor; `gemini` works as an alias): approvals and finished cards with replies. It has no prompt-submit hook, so press Esc in the terminal to release a waiting card.
 
 ## Hosted relay: Cloudflare Workers (recommended)
 
@@ -100,7 +104,7 @@ Nothing changes at the desk. Flip **Away** on the phone page (later on the watch
 `WRANGLER=$(which wrangler) node --test test/worker.smoke.js` runs the Worker in Cloudflare's local emulator and drives it with the real CLI and hook (9 checks, including restart persistence, finished cards and away mode).
 
 
-`npm test` covers 51 end-to-end cases against a real relay and the real hook process: pairing, allow/deny, Claude + Codex install/uninstall, Codex `apply_patch` summaries, timeouts, locked commands, SIGTERM cancel (including a kill that arrives mid-request), relay down, unpair, persistence and ntfy privacy.
+`npm test` covers 62 end-to-end cases against a real relay and the real hook process: pairing, allow/deny, Claude + Codex install/uninstall, Codex `apply_patch` summaries, timeouts, locked commands, SIGTERM cancel (including a kill that arrives mid-request), relay down, unpair, persistence and ntfy privacy.
 
 ## Not yet verified against the real tools
 

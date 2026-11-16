@@ -16,8 +16,11 @@ const HOOK_EVENT = 'PermissionRequest';
 const DEFAULT_RELAY = process.env.WRISTGATE_DEFAULT_RELAY || 'https://wristgate-relay.kiorte.workers.dev';
 const HOOK_TAG = 'wristgate.js" hook';
 
-// Each agent: where its hooks live and how a matcher that catches every tool is spelled.
-// Both use the same PermissionRequest stdin/stdout shape.
+// Each agent: where its hooks live, and which hook dialect it speaks.
+//   style 'claude'      Claude Code, Codex: PermissionRequest / Stop / UserPromptSubmit, hooks inside a settings file
+//   style 'copilot'     GitHub Copilot CLI: our own file in ~/.copilot/hooks/, permissionRequest / Stop / UserPromptSubmit
+//   style 'antigravity' Antigravity CLI (Gemini CLI's successor): a named entry in ~/.gemini/config/hooks.json,
+//                       PreToolUse (fires for every tool) / Stop, decisions auto_approve | deny | continue
 const AGENTS = {
   claude: {
     label: 'Claude Code',
@@ -31,7 +34,30 @@ const AGENTS = {
     file: () => path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'hooks.json'),
     matcher: {}, // Codex matchers are regexes; omitting it matches every tool
   },
+  copilot: {
+    label: 'Copilot CLI',
+    style: 'copilot',
+    home: () => process.env.COPILOT_HOME || path.join(os.homedir(), '.copilot'),
+    file: () => path.join(process.env.COPILOT_HOME || path.join(os.homedir(), '.copilot'), 'hooks', 'wristgate.json'),
+  },
+  antigravity: {
+    label: 'Antigravity CLI',
+    style: 'antigravity',
+    home: () => process.env.GEMINI_HOME || path.join(os.homedir(), '.gemini'),
+    file: () => path.join(process.env.GEMINI_HOME || path.join(os.homedir(), '.gemini'), 'config', 'hooks.json'),
+  },
 };
+const AGENT_ALIASES = { gemini: 'antigravity', agy: 'antigravity', chatgpt: 'codex', openai: 'codex', 'github-copilot': 'copilot' };
+const styleOf = (agent) => AGENTS[agent]?.style || 'claude';
+// "both" kept for v0.2 users: Claude Code + Codex.
+function parseAgents(want) {
+  want = String(want || '').toLowerCase();
+  if (want === 'both') return ['claude', 'codex'];
+  if (want === 'all') return Object.keys(AGENTS);
+  if (want === 'detect') return detectAgents();
+  return want.split(',').map((x) => x.trim()).filter(Boolean).map((x) => AGENT_ALIASES[x] || x);
+}
+const AGENT_HELP = 'claude, codex, copilot, antigravity (or gemini), both, all';
 const detectAgents = () => Object.keys(AGENTS).filter((a) => fs.existsSync(AGENTS[a].home()));
 
 // Things that are never approvable from the wrist. The watch can still deny them;
@@ -96,12 +122,45 @@ const ourHooks = (cfg, agent) => [
 ];
 const OUR_EVENTS = [HOOK_EVENT, 'Stop', 'UserPromptSubmit'];
 
+const cmdFor = (sub, agent) => `node ${JSON.stringify(INSTALLED)} ${sub} --agent ${agent}`;
+
+function installOther(cfg, agent) {
+  const A = AGENTS[agent];
+  const stop = cfg.stopCards !== false;
+  if (A.style === 'copilot') {
+    writeJson(A.file(), { version: 1, hooks: {
+      permissionRequest: [{ type: 'command', command: cmdFor('hook', agent), timeoutSec: cfg.timeoutSec + 30 }],
+      ...(stop ? {
+        Stop: [{ type: 'command', command: cmdFor('hook-stop', agent), timeoutSec: (cfg.replyTimeoutSec || 900) + 30 }],
+        UserPromptSubmit: [{ type: 'command', command: cmdFor('hook-prompt', agent), timeoutSec: 10 }],
+      } : {}),
+    } });
+  } else if (A.style === 'antigravity') {
+    const all = readJson(A.file(), {});
+    all.wristgate = {
+      PreToolUse: [{ matcher: '*', command: cmdFor('hook', agent), timeout: cfg.timeoutSec + 30 }],
+      ...(stop ? { Stop: [{ command: cmdFor('hook-stop', agent), timeout: (cfg.replyTimeoutSec || 900) + 30 }] } : {}),
+    };
+    writeJson(A.file(), all);
+  }
+}
+
+function removeOther(agent) {
+  const A = AGENTS[agent];
+  if (A.style === 'copilot') fs.rmSync(A.file(), { force: true });
+  else if (A.style === 'antigravity') {
+    const all = readJson(A.file(), null);
+    if (all && all.wristgate) { delete all.wristgate; writeJson(A.file(), all); }
+  }
+}
+
 function installHook(cfg) {
   fs.mkdirSync(HOME, { recursive: true });
   fs.copyFileSync(__filename, INSTALLED);
   for (const agent of cfg.agents) {
     const A = AGENTS[agent];
     if (agent === 'claude' && cfg.viaPlugin) { removeHook(['claude']); continue; } // the plugin supplies these
+    if (A.style) { installOther(cfg, agent); continue; }
     const settings = readJson(A.file(), {});
     settings.hooks ||= {};
     for (const ev of OUR_EVENTS) {
@@ -115,6 +174,7 @@ function installHook(cfg) {
 
 function removeHook(agents = Object.keys(AGENTS)) {
   for (const agent of agents) {
+    if (AGENTS[agent].style) { removeOther(agent); continue; }
     const f = AGENTS[agent].file();
     const settings = readJson(f, null);
     if (!settings?.hooks) continue;
@@ -186,10 +246,48 @@ async function shouldRoute(cfg) {
   try { return !!(await api(cfg, 'GET', '/api/client/state')).away; } catch { return false; }
 }
 
-function emit(behavior, message) {
+// Every tool reports its call differently; reduce them to Claude's names so one describe() fits all.
+function normalise(ev) {
+  const tool = ev.tool_name || ev.toolName || ev.toolCall?.name || 'Tool';
+  let input = ev.tool_input ?? ev.toolArgs ?? ev.toolCall?.args ?? {};
+  if (typeof input === 'string') { try { input = JSON.parse(input); } catch { input = { command: input }; } }
+  if (!input || typeof input !== 'object') input = {};
+  const cwd = ev.cwd || input.Cwd || input.cwd || (Array.isArray(ev.workspacePaths) && ev.workspacePaths[0]) || '';
+  const t = String(tool).toLowerCase();
+  const filePath = input.file_path ?? input.path ?? input.TargetFile ?? input.filePath ?? input.AbsolutePath;
+  if (/^(bash|shell|powershell|run_command|run_shell_command|run_in_terminal)$/.test(t))
+    return { tool: 'Bash', input: { command: input.command ?? input.CommandLine ?? input.cmd ?? '', description: input.description }, cwd, risky: true };
+  if (/^(write|create|write_file|write_to_file|create_file)$/.test(t))
+    return { tool: 'Write', input: { file_path: filePath, content: input.content ?? input.CodeContent ?? input.file_text ?? '' }, cwd, risky: true };
+  if (/(edit|replace|str_replace|apply_patch)/.test(t) && t !== 'apply_patch')
+    return { tool: 'Edit', input: { file_path: filePath, old_string: input.old_string ?? input.old_str ?? input.TargetContent ?? '',
+      new_string: input.new_string ?? input.new_str ?? input.ReplacementContent ?? '' }, cwd, risky: true };
+  const risky = !/^(read|view|list|ls|glob|grep|search|find|codebase_search|read_file|view_file|list_dir|grep_search|find_by_name|todo|think)/.test(t);
+  return { tool, input, cwd, risky };
+}
+
+// One permission answer, in the dialect of the agent that asked.
+let EMITTED = false;
+const out = (obj) => { EMITTED = true; process.stdout.write(JSON.stringify(obj)); };
+function emit(behavior, message, agent = 'claude') {
+  const style = styleOf(agent);
+  if (style === 'copilot') {
+    return out({ behavior, ...(message ? { message } : {}), permissionDecision: behavior,
+      ...(message ? { permissionDecisionReason: message } : {}) });
+  }
+  if (style === 'antigravity') {
+    return out(behavior === 'allow' ? { decision: 'auto_approve' } : { decision: 'deny', reason: message });
+  }
   const decision = { behavior };
   if (message) decision.message = message;
-  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: HOOK_EVENT, decision } }));
+  out({ hookSpecificOutput: { hookEventName: HOOK_EVENT, decision } });
+}
+// Not ours to answer: let the agent carry on as normal. Antigravity wants an explicit decision.
+function passThrough(agent) {
+  if (!EMITTED && styleOf(agent) === 'antigravity') out({ decision: 'allow' });
+}
+function emitContinue(agent, reason) {
+  out(styleOf(agent) === 'antigravity' ? { decision: 'continue', reason } : { decision: 'block', reason });
 }
 
 async function hook(agent = 'claude') {
@@ -203,12 +301,15 @@ async function hook(agent = 'claude') {
   cfgRef = cfg;
   let ev;
   try { ev = JSON.parse(input); } catch { return; }
-  const tool = ev.tool_name || 'Tool';
-  if (tool === 'ExitPlanMode' || tool === 'AskUserQuestion') return; // need the real UI
   if (!AGENTS[agent]) agent = 'claude';
+  const n = normalise(ev);
+  const tool = n.tool;
+  if (tool === 'ExitPlanMode' || tool === 'AskUserQuestion') return; // need the real UI
   if (wrongSource(cfg, agent)) return;
-  const cwd = ev.cwd || '';
-  const { summary, detail, locked } = describe(tool, ev.tool_input, cwd);
+  // Antigravity's PreToolUse fires for every tool, reads included: only bother the wrist with real changes.
+  if (styleOf(agent) === 'antigravity' && !n.risky) return;
+  const cwd = n.cwd;
+  const { summary, detail, locked } = describe(tool, n.input, cwd);
   if (!(await shouldRoute(cfg))) return; // at the desk: normal terminal prompt
 
   // Claude Code kills the hook (SIGTERM) when you answer in the terminal or the turn is interrupted.
@@ -241,19 +342,20 @@ async function hook(agent = 'claude') {
       await new Promise((r) => setTimeout(r, 1000 * failures));
       continue;
     }
-    if (st === 'allow') return emit('allow');
-    if (st === 'deny') return emit('deny', 'Denied from Wristgate. Do not retry this action; ask the user what to do instead.');
+    if (st === 'allow') return emit('allow', null, agent);
+    if (st === 'deny') return emit('deny', 'Denied from Wristgate. Do not retry this action; ask the user what to do instead.', agent);
     if (st === 'cancelled' || st === 'returned') return; // answered in the terminal / back at the desk
     if (st === 'expired') break;
   }
   if (locked || cfg.onTimeout === 'prompt') return; // fall through to the terminal prompt
-  emit('deny', `No answer from Wristgate within ${cfg.timeoutSec}s, so this was not run. Carry on with anything that doesn't need it, then tell the user it is waiting for approval.`);
+  emit('deny', `No answer from Wristgate within ${cfg.timeoutSec}s, so this was not run. Carry on with anything that doesn't need it, then tell the user it is waiting for approval.`, agent);
 }
 
 // Last thing the agent said, for the "finished" card. Codex passes it in; Claude has a transcript.
 function lastAssistantText(ev) {
   if (typeof ev.last_assistant_message === 'string') return ev.last_assistant_message;
-  const f = ev.transcript_path;
+  if (typeof ev.prompt_response === 'string') return ev.prompt_response;
+  const f = ev.transcript_path || ev.transcriptPath;
   if (!f) return '';
   try {
     const fd = fs.openSync(f, 'r');
@@ -276,6 +378,25 @@ function lastAssistantText(ev) {
   return '';
 }
 
+// The last thing the user typed (Claude transcripts), so turns that were only a /wristgate command stay quiet.
+function lastUserText(ev) {
+  const f = ev.transcript_path || ev.transcriptPath;
+  if (!f) return '';
+  try {
+    const lines = fs.readFileSync(f, 'utf8').split('\n').slice(-400).reverse();
+    for (const line of lines) {
+      let j; try { j = JSON.parse(line); } catch { continue; }
+      const msg = j.message || j;
+      if (j.type === 'user' || msg.role === 'user') {
+        const c = msg.content;
+        if (typeof c === 'string') return c;
+        if (Array.isArray(c) && c.some((x) => x.type === 'text')) return c.filter((x) => x.type === 'text').map((x) => x.text).join('\n');
+      }
+    }
+  } catch {}
+  return '';
+}
+
 async function hookStop(agent = 'claude') {
   // Exit 0 with no output = the agent stops normally. Only a reply from the wrist keeps it going.
   let input = '';
@@ -286,12 +407,13 @@ async function hookStop(agent = 'claude') {
   try { ev = JSON.parse(input); } catch { return; }
   if (!AGENTS[agent]) agent = 'claude';
   if (wrongSource(cfg, agent)) return;
+  if (/(^|[\s>])\/wristgate(:|\b)/.test(lastUserText(ev))) return; // a Wristgate command, not real work
   if (!(await shouldRoute(cfg))) return;
 
   const raw = lastAssistantText(ev).trim();
   const said = raw.replace(/\s+/g, ' ');
   const summary = said ? (said.length > 120 ? said.slice(0, 119) + '…' : said) : 'Finished and waiting for you';
-  const cwd = ev.cwd || '';
+  const cwd = normalise(ev).cwd;
   const timeoutSec = cfg.replyTimeoutSec || 900;
 
   let reqId, killed = false;
@@ -311,8 +433,7 @@ async function hookStop(agent = 'claude') {
     try { res = await api(cfg, 'GET', `/api/client/requests/${reqId}?wait=25`); failures = 0; }
     catch { if (++failures >= 5) return; await new Promise((r) => setTimeout(r, 1000 * failures)); continue; }
     if (res.status === 'replied' && res.reply) {
-      process.stdout.write(JSON.stringify({ decision: 'block',
-        reason: `The user replied from Wristgate (their watch/phone): "${res.reply}". Treat this as their next message and carry on.` }));
+      emitContinue(agent, `The user replied from Wristgate (their watch/phone): "${res.reply}". Treat this as their next message and carry on.`);
       return;
     }
     if (res.status !== 'pending') return; // dismissed, expired, cancelled, back at desk
@@ -373,8 +494,8 @@ async function main() {
   const cmd = a._[0];
   const cfg = readJson(CONFIG, null);
 
-  if (cmd === 'hook') return hook(a.agent);
-  if (cmd === 'hook-stop') return hookStop(a.agent);
+  if (cmd === 'hook') { const ag = AGENT_ALIASES[a.agent] || a.agent; await hook(ag); return passThrough(ag); }
+  if (cmd === 'hook-stop') return hookStop(AGENT_ALIASES[a.agent] || a.agent);
   if (cmd === 'hook-prompt') return hookPrompt(a.agent);
   if (cmd === 'pair-wait') return pairWait(a);
 
@@ -390,10 +511,9 @@ async function main() {
     const always = a.always === true || (a.always === undefined && !!cfg?.always);
     const stopCards = a['no-stop'] ? false : (cfg?.stopCards ?? true);
     const name = a.name || os.hostname();
-    let agents = a.agent === 'both' ? Object.keys(AGENTS)
-      : a.agent ? [a.agent] : (cfg?.agents || detectAgents());
+    let agents = a.agent ? parseAgents(a.agent) : (cfg?.agents || detectAgents());
     if (!agents.length) agents = ['claude'];
-    for (const ag of agents) if (!AGENTS[ag]) die(`unknown agent "${ag}" (use claude, codex or both)`);
+    for (const ag of agents) if (!AGENTS[ag]) die(`unknown agent "${ag}" (use ${AGENT_HELP})`);
     let res;
     if (code) {
       // Code read off the watch.
@@ -416,7 +536,7 @@ async function main() {
         const child = require('node:child_process').spawn(process.execPath, [__filename, 'pair-wait'],
           { detached: true, stdio: 'ignore', env: process.env, windowsHide: true });
         child.unref();
-        console.log('  Pairing finishes by itself within 10 minutes. Check with: /wristgate status');
+        console.log('  Pairing finishes by itself within 10 minutes. Check with: /wristgate:status');
         return;
       }
       console.log('  Waiting up to 10 minutes...\n');
@@ -454,23 +574,21 @@ async function main() {
   }
   // Change which agents are hooked up without pairing again: `wristgate agents claude,codex`
   if (cmd === 'agents') {
-    const want = String(a._[1] || '').toLowerCase();
-    const list = want === 'both' || want === 'all' ? Object.keys(AGENTS)
-      : want === 'detect' ? detectAgents() : want.split(',').map((x) => x.trim()).filter(Boolean);
-    if (!list.length) die('usage: wristgate agents claude,codex | both | detect');
-    for (const ag of list) if (!AGENTS[ag]) die(`unknown agent "${ag}" (use claude, codex or both)`);
+    const list = parseAgents(a._[1]);
+    if (!list.length) die(`usage: wristgate agents <list> (${AGENT_HELP}, or detect)`);
+    for (const ag of list) if (!AGENTS[ag]) die(`unknown agent "${ag}" (use ${AGENT_HELP})`);
     removeHook(cfg.agents.filter((g) => !list.includes(g)));
     cfg.agents = list;
     writeJson(CONFIG, cfg, 0o600);
     installHook(cfg);
-    for (const ag of list) console.log(`Hooked up: ${AGENTS[ag].label} (${AGENTS[ag].file()})`);
+    for (const ag of list) console.log(ag === 'claude' && cfg.viaPlugin ? 'Hooked up: Claude Code (plugin)' : `Hooked up: ${AGENTS[ag].label} (${AGENTS[ag].file()})`);
     if (list.includes('codex')) console.log('Codex: open Codex and run /hooks once to trust the Wristgate hooks.');
     return;
   }
   if (cmd === 'status') {
     let reach = 'unreachable', away = '?';
     try { await api(cfg, 'GET', '/healthz'); reach = 'ok'; away = (await api(cfg, 'GET', '/api/client/state')).away ? 'away' : 'at desk'; } catch {}
-    console.log(`${cfg.viaPlugin ? 'mode:       Claude Code plugin\n' : ''}machine:    ${cfg.name}\nrelay:      ${cfg.relay} (${reach})\nenabled:    ${cfg.enabled}\nrouting:    ${cfg.always ? 'always' : 'when away'} (device: ${away})\ntimeout:    ${cfg.timeoutSec}s, then ${cfg.onTimeout}; finished cards wait ${cfg.replyTimeoutSec || 900}s${cfg.stopCards === false ? ' (off)' : ''}\nagents:     ${cfg.agents.map((g) => `${AGENTS[g].label} (${AGENTS[g].file()})`).join(', ')}`);
+    console.log(`${cfg.viaPlugin ? 'mode:       Claude Code plugin\n' : ''}machine:    ${cfg.name}\nrelay:      ${cfg.relay} (${reach})\nenabled:    ${cfg.enabled}\nrouting:    ${cfg.always ? 'always' : 'when away'} (device: ${away})\ntimeout:    ${cfg.timeoutSec}s, then ${cfg.onTimeout}; finished cards wait ${cfg.replyTimeoutSec || 900}s${cfg.stopCards === false ? ' (off)' : ''}\nagents:     ${cfg.agents.map((g) => g === 'claude' && cfg.viaPlugin ? 'Claude Code (plugin)' : `${AGENTS[g].label} (${AGENTS[g].file()})`).join(', ')}`);
     return;
   }
   if (cmd === 'unpair') {

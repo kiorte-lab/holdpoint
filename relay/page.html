@@ -62,7 +62,7 @@
 
   <h2>Pair a machine</h2>
   <div class="card">
-    <div class="meta">On the machine running Claude Code or Codex, in the wristgate folder:</div>
+    <div class="meta">On the machine running your coding agent, in the wristgate folder:</div>
     <div class="code" id="code">······</div>
     <code class="cmd" id="cmd"></code>
     <div class="row" style="margin-top:10px">
@@ -140,7 +140,7 @@
   }
 
   let lastIds = '', presets = [];
-  const agentName = (r) => (r.agent === 'codex' ? 'Codex' : 'Claude Code');
+  const agentName = (r) => ({ codex: 'Codex', copilot: 'Copilot CLI', antigravity: 'Antigravity' })[r.agent] || 'Claude Code';
   function renderPending(list, serverTime) {
     const ids = list.map((r) => r.id).join(',') + '|' + presets.join('\u0001');
     if (ids === lastIds) { updateTimers(serverTime); return; }

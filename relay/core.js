@@ -293,7 +293,7 @@ function createRelay({ initialState = null, persist = () => {}, notify = async (
         const kind = b.kind === 'stop' ? 'stop' : 'permission';
         const timeout = Math.min(Math.max(Number(b.timeoutSec) || 120, 5), MAX_REQUEST_TIMEOUT_S);
         const r = { id: 'req_' + rand(9), deviceId: cli.deviceId, clientId: a.id, clientName: cli.name,
-          agent: ['claude', 'codex'].includes(b.agent) ? b.agent : 'claude', tool: str(b.tool, 40), summary: str(b.summary, 120), detail: str(b.detail, 2000),
+          agent: ['claude', 'codex', 'copilot', 'antigravity'].includes(b.agent) ? b.agent : 'claude', tool: str(b.tool, 40), summary: str(b.summary, 120), detail: str(b.detail, 2000),
           cwd: str(b.cwd, 200), locked: kind === 'permission' && !!b.locked, kind,
           created: now(), expires: now() + timeout * 1000,
           status: 'pending' };
