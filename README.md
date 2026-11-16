@@ -104,7 +104,7 @@ Nothing changes at the desk. Flip **Away** on the phone page (later on the watch
 `WRANGLER=$(which wrangler) node --test test/worker.smoke.js` runs the Worker in Cloudflare's local emulator and drives it with the real CLI and hook (9 checks, including restart persistence, finished cards and away mode).
 
 
-`npm test` covers 63 end-to-end cases against a real relay and the real hook process: pairing, allow/deny, Claude + Codex install/uninstall, Codex `apply_patch` summaries, timeouts, locked commands, SIGTERM cancel (including a kill that arrives mid-request), relay down, unpair, persistence and ntfy privacy.
+`npm test` covers 64 end-to-end cases against a real relay and the real hook process: pairing, allow/deny, Claude + Codex install/uninstall, Codex `apply_patch` summaries, timeouts, locked commands, SIGTERM cancel (including a kill that arrives mid-request), relay down, unpair, persistence and ntfy privacy.
 
 ## Not yet verified against the real tools
 

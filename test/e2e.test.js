@@ -63,6 +63,12 @@ before(async () => {
 });
 after(async () => { await srv.close(); fs.rmSync(tmp, { recursive: true, force: true }); });
 
+test('privacy policy is served', async () => {
+  const r = await fetch(base + '/privacy');
+  assert.equal(r.status, 200);
+  assert.match(await r.text(), /privacy policy/i);
+});
+
 test('phone page is served', async () => {
   const r = await fetch(base + '/');
   assert.equal(r.status, 200);

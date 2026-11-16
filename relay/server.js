@@ -17,6 +17,7 @@ function startServer({ port = 0, dataFile = null, notify, host = '0.0.0.0' } = {
   };
   const relay = createRelay({ initialState, persist, notify });
   const page = fs.readFileSync(path.join(__dirname, 'page.html'));
+  const privacy = fs.readFileSync(path.join(__dirname, 'privacy.html'));
 
   const server = http.createServer(async (req, res) => {
     try {
@@ -42,6 +43,11 @@ function startServer({ port = 0, dataFile = null, notify, host = '0.0.0.0' } = {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
           'content-security-policy': "default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" });
         res.end(page);
+        return;
+      }
+      if (req.method === 'GET' && req.url === '/privacy') {
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'" });
+        res.end(privacy);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');

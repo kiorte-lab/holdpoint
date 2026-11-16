@@ -1,1 +1,14 @@
 project.manifest = manifest.xml
+base.sourcePath = source;source-colour
+
+# Black-and-white screens: accent colours become white.
+instinct2.sourcePath = source;source-mono
+instinct2s.sourcePath = source;source-mono
+instinct2x.sourcePath = source;source-mono
+instinct3solar45mm.sourcePath = source;source-mono
+instinctcrossover.sourcePath = source;source-mono
+instincte40mm.sourcePath = source;source-mono
+instincte45mm.sourcePath = source;source-mono
+
+# 8-colour screen: no orange or grey in its palette.
+fr55.sourcePath = source;source-8colour

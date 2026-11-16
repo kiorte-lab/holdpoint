@@ -17,7 +17,9 @@ class HoldpointGlance extends WatchUi.GlanceView {
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         var label = "All clear";
         var colour = 0x8B92A3;
-        if (n instanceof Number && n > 0) {
+        if (Api.token() == null) {
+            label = "Open to pair";
+        } else if (n instanceof Number && n > 0) {
             label = n.toString() + " waiting for you";
             colour = 0xD97757;
         }

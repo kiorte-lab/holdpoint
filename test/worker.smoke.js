@@ -65,6 +65,12 @@ test('page served by the Worker', async () => {
   assert.match(await r.text(), /Holdpoint/);
 });
 
+test('privacy policy served by the Worker', async () => {
+  const r = await fetch(base + '/privacy');
+  assert.equal(r.status, 200);
+  assert.match(await r.text(), /privacy policy/i);
+});
+
 test('pair against the Worker', async () => {
   const r = await run(['pair', device.pairCode, '--relay', base, '--name', 'worker-test']);
   assert.equal(r.code, 0, r.out);

@@ -7,10 +7,22 @@ import Toybox.Lang;
 module Api {
     function relay() as String {
         var u = Application.Properties.getValue("relayUrl");
-        if (u == null || !(u instanceof String) || (u as String).length() == 0) {
+        // Empty, or left over from the app's old name: use the current relay.
+        if (u == null || !(u instanceof String) || (u as String).length() == 0 || (u as String).find("wristgate-relay") != null) {
             return "https://holdpoint-relay.kiorte.workers.dev";
         }
         return u as String;
+    }
+
+    // A watch updated from Wristgate keeps its old relay setting and a token that only the old relay knows.
+    // Point it at the new relay and start fresh, so it shows a new pairing code. Foreground only.
+    function migrate() as Void {
+        var u = Application.Properties.getValue("relayUrl");
+        if (u instanceof String && (u as String).find("wristgate-relay") != null) {
+            Application.Properties.setValue("relayUrl", "https://holdpoint-relay.kiorte.workers.dev");
+            Application.Properties.setValue("token", "");
+            Application.Properties.setValue("lastCount", 0);
+        }
     }
 
     function token() as String? {

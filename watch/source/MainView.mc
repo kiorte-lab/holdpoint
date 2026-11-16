@@ -3,14 +3,11 @@ import Toybox.Attention;
 import Toybox.Communications;
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.Math;
 import Toybox.System;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
-const ORANGE = 0xD97757;
-const GREEN = 0x2FBF71;
-const RED = 0xE5484D;
-const DIM = 0x8B92A3;
 
 // One card at a time: swipe up/down to move between them, tap to answer,
 // hold the bottom button (menu) for Away / pairing.
@@ -326,33 +323,53 @@ class MainView extends WatchUi.View {
         var h = dc.getHeight();
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
+        var xt = Graphics.getFontHeight(Graphics.FONT_XTINY);
+        var round = System.getDeviceSettings().screenShape == System.SCREEN_SHAPE_ROUND;
+        var shape = System.getDeviceSettings().screenShape;
+        var bottom = round ? h * 0.90 : (shape == System.SCREEN_SHAPE_SEMI_OCTAGON ? h * 0.94 : h * 0.97);
 
-        // Status pill at the top: tap it for Away / pairing.
-        var label = away ? "AWAY" : "AT DESK";
-        var pw = dc.getTextWidthInPixels(label, Graphics.FONT_XTINY) + 36;
-        var ph = Graphics.getFontHeight(Graphics.FONT_XTINY) + 8;
-        var py = h * 0.13 - ph / 2;
-        dc.setColor(away ? ORANGE : 0x2A2F3A, Graphics.COLOR_TRANSPARENT);
-        dc.fillRoundedRectangle(w / 2 - pw / 2, py, pw, ph, ph / 2);
-        centre(dc, label, Graphics.FONT_XTINY, away ? Graphics.COLOR_BLACK : Graphics.COLOR_WHITE, h * 0.13);
+        // Status: a pill at the top (tap it for Away / pairing), or inside the Instinct's little round subscreen.
+        var top;
+        var sub = subscreen();
+        if (sub != null) {
+            var cx = sub.x + sub.width / 2;
+            var cy = sub.y + sub.height / 2;
+            if (away) {
+                dc.setColor(ORANGE, Graphics.COLOR_TRANSPARENT);
+                dc.fillCircle(cx, cy, sub.width / 2);
+            }
+            dc.setColor(away ? Graphics.COLOR_BLACK : Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, cy, Graphics.FONT_XTINY, away ? "AWAY" : "DESK", Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+            top = sub.y + sub.height + 6;
+        } else {
+            var label = away ? "AWAY" : "AT DESK";
+            var pw = dc.getTextWidthInPixels(label, Graphics.FONT_XTINY) + 36;
+            var ph = xt + 8;
+            var pc = round ? h * 0.13 : h * 0.09;
+            dc.setColor(away ? ORANGE : 0x2A2F3A, Graphics.COLOR_TRANSPARENT);
+            dc.fillRoundedRectangle(w / 2 - pw / 2, pc - ph / 2, pw, ph, ph / 2);
+            centre(dc, label, Graphics.FONT_XTINY, away ? Graphics.COLOR_BLACK : Graphics.COLOR_WHITE, pc);
+            top = pc + ph / 2 + 4;
+        }
 
         if (status.length() > 0) {
-            centre(dc, status, Graphics.FONT_SMALL, Graphics.COLOR_WHITE, h * 0.45);
+            stack(dc, [[status, Graphics.FONT_SMALL, Graphics.COLOR_WHITE]], top, bottom);
             return;
         }
 
         if (showPair || (clients == 0 && pending.size() == 0)) {
-            drawPair(dc, w, h);
+            drawPair(dc, top, bottom);
             return;
         }
 
         var r = current();
         if (r == null) {
-            centre(dc, "All clear", Graphics.FONT_MEDIUM, Graphics.COLOR_WHITE, h * 0.40);
-            centre(dc, away ? "Waiting for your agent" : (touch ? "Tap the pill to go Away" : "Hold UP for Away"), Graphics.FONT_XTINY, DIM, h * 0.58);
-            if (notice.length() > 0) {
-                centre(dc, notice.length() > 24 ? notice.substring(0, 23) + "..." : notice, Graphics.FONT_XTINY, GREEN, h * 0.72);
-            }
+            var items = [
+                ["All clear", Graphics.FONT_MEDIUM, Graphics.COLOR_WHITE],
+                [away ? "Waiting for your agent" : (touch ? "Tap the pill to go Away" : "Hold UP for Away"), Graphics.FONT_XTINY, DIM]
+            ];
+            if (notice.length() > 0) { items.add([notice, Graphics.FONT_XTINY, GREEN]); }
+            stack(dc, items, top, bottom);
             return;
         }
 
@@ -361,46 +378,145 @@ class MainView extends WatchUi.View {
         if ("codex".equals(r["agent"])) { agent = "Codex"; }
         else if ("copilot".equals(r["agent"])) { agent = "Copilot"; }
         else if ("antigravity".equals(r["agent"])) { agent = "Antigravity"; }
-        var head = isStop ? agent + " · finished" : agent + " · " + (r["tool"] as String);
-        dc.setColor(isStop ? GREEN : ORANGE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(w / 2, h * 0.21, Graphics.FONT_XTINY, head, Graphics.TEXT_JUSTIFY_CENTER);
+        var locked = !isStop && r["locked"] == true;
+        var head = isStop ? agent + " · finished" : (locked ? agent + " · locked" : agent + " · " + (r["tool"] as String));
+        if (pending.size() > 1) {
+            head = head + "  " + (index + 1).toString() + "/" + pending.size().toString();
+        }
+        var y = top + xt / 2;
+        centre(dc, fit(dc, head, Graphics.FONT_XTINY, widthAt(dc, y)), Graphics.FONT_XTINY, isStop ? GREEN : (locked ? RED : ORANGE), y);
 
+        // Bottom two lines: machine · folder, then what to press.
+        var hintY = bottom - xt / 2;
+        var whereY = hintY - xt;
+        var areaTop = top + xt + 2;
+        var areaH = whereY - xt / 2 - areaTop - 2;
+        var areaW = widthAt(dc, areaTop + areaH / 2);
         var text = new WatchUi.TextArea({
             :text => r["summary"] as String,
             :color => Graphics.COLOR_WHITE,
             :font => [Graphics.FONT_SMALL, Graphics.FONT_TINY, Graphics.FONT_XTINY],
-            :locX => w * 0.12,
-            :locY => h * 0.30,
-            :width => w * 0.76,
-            :height => h * 0.38,
-            :justification => Graphics.TEXT_JUSTIFY_CENTER
+            :locX => (w - areaW) / 2,
+            :locY => areaTop,
+            :width => areaW,
+            :height => areaH,
+            :justification => Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER
         });
         text.draw(dc);
 
         var where = r["clientName"] as String;
         var cwd = r["cwd"];
         if (cwd instanceof String && cwd.length() > 0) {
-            where = where + " · " + cwd;
+            where = where + " · " + baseName(cwd as String);
         }
-        centre(dc, where, Graphics.FONT_XTINY, DIM, h * 0.70);
+        centre(dc, fit(dc, where, Graphics.FONT_XTINY, widthAt(dc, whereY)), Graphics.FONT_XTINY, DIM, whereY);
 
         var verb = touch ? "Tap" : "START";
-        var hint = isStop ? verb + " to read & reply" : (r["locked"] == true ? verb + " to deny" : verb + " to answer");
-        if (pending.size() > 1) {
-            hint = hint + "   " + (index + 1).toString() + "/" + pending.size().toString();
-        }
-        centre(dc, hint, Graphics.FONT_XTINY, isStop ? GREEN : ORANGE, h * 0.82);
+        var hint = isStop ? verb + " to read" : (r["locked"] == true ? verb + " to deny" : verb + " to answer");
+        centre(dc, fit(dc, hint, Graphics.FONT_XTINY, widthAt(dc, hintY)), Graphics.FONT_XTINY, isStop ? GREEN : (locked ? RED : ORANGE), hintY);
     }
 
-    function drawPair(dc as Graphics.Dc, w, h) as Void {
-        centre(dc, "On your PC run", Graphics.FONT_XTINY, DIM, h * 0.27);
-        centre(dc, "holdpoint pair", Graphics.FONT_SMALL, Graphics.COLOR_WHITE, h * 0.35);
-        centre(dc, pairCode == null ? "......" : pairCode as String, Graphics.FONT_NUMBER_MEDIUM, ORANGE, h * 0.50);
-        centre(dc, "or enter the PC's code in", Graphics.FONT_XTINY, DIM, h * 0.67);
-        centre(dc, "Garmin Connect > Holdpoint", Graphics.FONT_XTINY, DIM, h * 0.74);
-        if (showPair) {
-            centre(dc, touch ? "Tap when done" : "START when done", Graphics.FONT_XTINY, ORANGE, h * 0.84);
+    // The Instinct's round window in the top-right corner, if this watch has one.
+    function subscreen() {
+        if (WatchUi has :getSubscreen) {
+            return WatchUi.getSubscreen();
         }
+        return null;
+    }
+
+    // Last folder of a path ("/home/me/shop-api" or "C:\\code\\shop-api" -> "shop-api").
+    function baseName(path as String) as String {
+        var chars = path.toCharArray();
+        var end = chars.size();
+        while (end > 0 && (chars[end - 1] == '/' || chars[end - 1] == '\\')) { end--; }
+        var start = end;
+        while (start > 0 && chars[start - 1] != '/' && chars[start - 1] != '\\') { start--; }
+        return start < end ? path.substring(start, end) as String : path;
+    }
+
+    // Shorten text with an ellipsis until it fits maxW pixels.
+    function fit(dc as Graphics.Dc, s as String, font, maxW) as String {
+        if (dc.getTextWidthInPixels(s, font) <= maxW) { return s; }
+        var n = s.length();
+        while (n > 1 && dc.getTextWidthInPixels(s.substring(0, n) + "…", font) > maxW) { n--; }
+        return s.substring(0, n) + "…";
+    }
+
+    function drawPair(dc as Graphics.Dc, top, bottom) as Void {
+        var code = pairCode == null ? "......" : pairCode as String;
+        var items = [
+            ["On your PC run", Graphics.FONT_XTINY, DIM, true],
+            ["holdpoint pair", Graphics.FONT_SMALL, Graphics.COLOR_WHITE],
+            [code, codeFont(dc, code), ORANGE],
+            ["or enter the PC's code", Graphics.FONT_XTINY, DIM],
+            ["in Garmin Connect", Graphics.FONT_XTINY, DIM]
+        ];
+        if (showPair) {
+            items.add([touch ? "Tap when done" : "START when done", Graphics.FONT_XTINY, ORANGE]);
+        }
+        stack(dc, items, top, bottom);
+    }
+
+    // Draws lines centred as a block between top and bottom, spaced by real font heights,
+    // each trimmed to the width the screen has at that height (round screens are narrower near the edges).
+    function stack(dc as Graphics.Dc, items as Array, top, bottom) as Void {
+        var total = 0;
+        for (var i = 0; i < items.size(); i++) { total += lineH((items[i] as Array)[1]); }
+        // Too tall for a small screen: drop lines marked optional (4th element true).
+        for (var i = items.size() - 1; i >= 0 && total > bottom - top; i--) {
+            var it = items[i] as Array;
+            if (it.size() > 3 && it[3] == true) {
+                total -= lineH(it[1]);
+                items = items.slice(0, i).addAll(items.slice(i + 1, null));
+            }
+        }
+        var y = top + ((bottom - top) - total) / 2;
+        if (y < top) { y = top; }
+        for (var i = 0; i < items.size(); i++) {
+            var it = items[i] as Array;
+            var lh = lineH(it[1]);
+            var mid = y + lh / 2;
+            centre(dc, fit(dc, it[0] as String, it[1], widthAt(dc, mid)), it[1], it[2], mid);
+            y += lh;
+        }
+    }
+
+    // The biggest font that shows all six digits of the pairing code across the middle of the screen.
+    function codeFont(dc as Graphics.Dc, code as String) {
+        var maxW = widthAt(dc, dc.getHeight() / 2);
+        var fonts = [Graphics.FONT_NUMBER_MEDIUM, Graphics.FONT_NUMBER_MILD, Graphics.FONT_LARGE, Graphics.FONT_MEDIUM];
+        for (var i = 0; i < fonts.size(); i++) {
+            if (dc.getTextWidthInPixels(code, fonts[i]) <= maxW) { return fonts[i]; }
+        }
+        return Graphics.FONT_SMALL;
+    }
+
+    // Number fonts carry a lot of empty space above and below the digits.
+    function lineH(font) as Number {
+        var fh = Graphics.getFontHeight(font);
+        if (font == Graphics.FONT_NUMBER_MEDIUM || font == Graphics.FONT_NUMBER_HOT || font == Graphics.FONT_NUMBER_MILD) {
+            return fh;
+        }
+        return fh;
+    }
+
+    // Usable text width at a given y: the chord of a round screen, or the full width (less a margin) otherwise.
+    function widthAt(dc as Graphics.Dc, y) as Number {
+        var w = dc.getWidth();
+        var ds = System.getDeviceSettings();
+        if (ds.screenShape == System.SCREEN_SHAPE_ROUND) {
+            var r = w / 2.0;
+            var d = (y - dc.getHeight() / 2.0).abs();
+            if (d >= r) { return 0; }
+            return (2 * Math.sqrt(r * r - d * d) * 0.88).toNumber();
+        }
+        if (ds.screenShape == System.SCREEN_SHAPE_SEMI_OCTAGON) {
+            // Instinct: the bottom corners are cut off at 45 degrees.
+            var f = y / dc.getHeight().toFloat();
+            var k = f > 0.78 ? 0.95 - (f - 0.78) * 1.8 : 0.95;
+            return (w * k).toNumber();
+        }
+        return (w * 0.9).toNumber();
     }
 
     function centre(dc as Graphics.Dc, text as String, font, colour, y) as Void {

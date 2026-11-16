@@ -11,6 +11,7 @@ class HoldpointApp extends Application.AppBase {
     }
 
     function getInitialView() {
+        Api.migrate();
         // Check the relay every 5 minutes (the most Connect IQ allows) so the glance
         // stays current and the watch can nudge you when something is waiting.
         if (Background has :registerForTemporalEvent) {

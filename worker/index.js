@@ -3,6 +3,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import core from '../relay/core.js';
 import page from '../relay/page.html';
+import privacy from '../relay/privacy.html';
 
 const { createRelay, ntfyNotifier } = core;
 
@@ -36,6 +37,10 @@ export default {
     if (request.method === 'GET' && url.pathname === '/') {
       return new Response(page, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store',
         'content-security-policy': "default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" } });
+    }
+    if (request.method === 'GET' && url.pathname === '/privacy') {
+      return new Response(privacy, { headers: { 'content-type': 'text/html; charset=utf-8',
+        'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'" } });
     }
     if (url.pathname.startsWith('/api/') || url.pathname === '/healthz') {
       if (request.headers.get('content-length') > 32 * 1024) return new Response('too large', { status: 413 });

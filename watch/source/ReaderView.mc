@@ -151,6 +151,11 @@ class ReaderView extends WatchUi.View {
         var lh = Graphics.getFontHeight(FONT);
         lineH = lh;
         var y0 = (h * 0.19).toNumber();
+        // Instinct: start below the round window in the top-right corner.
+        if (WatchUi has :getSubscreen) {
+            var sub = WatchUi.getSubscreen();
+            if (sub != null && sub.y + sub.height + 2 > y0) { y0 = sub.y + sub.height + 2; }
+        }
         var y1 = (h * 0.80).toNumber();
         var viewH = y1 - y0;
         maxOffset = (all.size() * lh - viewH).toFloat();
