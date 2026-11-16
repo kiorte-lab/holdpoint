@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
-    <iq:application id="73e2be3686bb4b589fe33d0d1f0b2b4f" type="watch-app" name="@Strings.AppName" entry="HoldpointApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.1.0">
+    <iq:application id="e2177e6be18c462783553f0bf74ef9b8" type="watch-app" name="@Strings.AppName" entry="HoldpointApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.1.0">
         <iq:products>
             <iq:product id="epix2"/>
             <iq:product id="epix2pro42mm"/>
