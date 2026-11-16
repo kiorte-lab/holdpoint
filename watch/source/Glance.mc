@@ -4,7 +4,7 @@ import Toybox.Lang;
 import Toybox.WatchUi;
 
 (:glance)
-class WristgateGlance extends WatchUi.GlanceView {
+class HoldpointGlance extends WatchUi.GlanceView {
     function initialize() {
         GlanceView.initialize();
     }
@@ -13,7 +13,7 @@ class WristgateGlance extends WatchUi.GlanceView {
         var n = Application.Properties.getValue("lastCount");
         var h = dc.getHeight();
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(0, h * 0.3, Graphics.FONT_GLANCE, "WRISTGATE",
+        dc.drawText(0, h * 0.3, Graphics.FONT_GLANCE, "HOLDPOINT",
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         var label = "All clear";
         var colour = 0x8B92A3;

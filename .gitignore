@@ -3,5 +3,5 @@ node_modules/
 watch/bin/
 *.der
 *.pem
-wristgate-data.json
+holdpoint-data.json
 .env

@@ -183,7 +183,9 @@ class ReaderView extends WatchUi.View {
             dc.fillRoundedRectangle(w - 18, barY, 6, barH, 3);
         }
 
-        var hint = isStop ? "Tap to reply" : (req["locked"] == true ? "Tap to deny" : "Tap to answer");
+        var ds = System.getDeviceSettings();
+        var verb = ((ds has :isTouchScreen) && ds.isTouchScreen) ? "Tap" : "START";
+        var hint = isStop ? verb + " to reply" : (req["locked"] == true ? verb + " to deny" : verb + " to answer");
         dc.setColor(accent, Graphics.COLOR_TRANSPARENT);
         dc.drawText(w / 2, h * 0.86, Graphics.FONT_XTINY, hint, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }

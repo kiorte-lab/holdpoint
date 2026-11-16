@@ -1,4 +1,4 @@
-name = "wristgate-relay"
+name = "holdpoint-relay"
 main = "worker/index.js"
 compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat"]
@@ -14,4 +14,4 @@ tag = "v1"
 new_sqlite_classes = ["Relay"]
 
 # [vars]
-# PUBLIC_URL = "https://wristgate.example.com"
+# PUBLIC_URL = "https://holdpoint.example.com"

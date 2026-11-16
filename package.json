@@ -1,10 +1,10 @@
 {
-  "name": "wristgate",
+  "name": "holdpoint",
   "version": "0.7.0",
   "description": "Approve Claude Code and Codex permission prompts from your watch or phone",
   "license": "MIT",
   "bin": {
-    "wristgate": "cli/wristgate.js"
+    "holdpoint": "cli/holdpoint.js"
   },
   "files": [
     "cli/",

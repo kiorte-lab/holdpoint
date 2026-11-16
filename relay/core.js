@@ -1,4 +1,4 @@
-// Wristgate relay core: devices (watch/phone), clients (Claude Code machines), approval requests.
+// Holdpoint relay core: devices (watch/phone), clients (Claude Code machines), approval requests.
 // No dependencies. State is in memory, optionally persisted to a JSON file.
 'use strict';
 const crypto = require('node:crypto');
@@ -134,7 +134,7 @@ function createRelay({ initialState = null, persist = () => {}, notify = async (
           presets: dev.presets || DEFAULT_PRESETS, clients });
       }
       if (m === 'POST' && p === '/api/device/pair-code') return json(newPairCode(a.id));
-      // The PC showed a code (wristgate pair with no code); the watch or phone enters it here.
+      // The PC showed a code (holdpoint pair with no code); the watch or phone enters it here.
       if (m === 'POST' && p === '/api/device/claim') {
         const b = await body(req);
         const code = str(b.code, 6);

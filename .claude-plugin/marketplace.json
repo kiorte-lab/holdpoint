@@ -1,15 +1,15 @@
 {
-  "name": "wristgate",
+  "name": "holdpoint",
   "owner": {
     "name": "Simon Cassford"
   },
   "plugins": [
     {
-      "name": "wristgate",
+      "name": "holdpoint",
       "source": "./",
       "description": "Approve prompts and reply to Claude from your Garmin watch.",
       "version": "0.7.0"
     }
   ],
-  "description": "Wristgate: approve prompts and reply to your coding agent from a Garmin watch."
+  "description": "Holdpoint: approve prompts and reply to your coding agent from a Garmin watch."
 }

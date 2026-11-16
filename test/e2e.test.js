@@ -6,9 +6,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { startServer } = require('../relay/server');
-const { describe: summarise } = require('../cli/wristgate');
+const { describe: summarise } = require('../cli/holdpoint');
 
-const CLI = path.join(__dirname, '..', 'cli', 'wristgate.js');
+const CLI = path.join(__dirname, '..', 'cli', 'holdpoint.js');
 let srv, base, tmp, env, device, notified = [];
 
 function run(args, { stdin = '', extraEnv = {} } = {}) {
@@ -46,7 +46,7 @@ async function waitForPending(n = 1, ms = 5000) {
   throw new Error('no pending request appeared');
 }
 const decision = (out) => (out ? JSON.parse(out).hookSpecificOutput.decision : null);
-const cfgPath = () => path.join(env.WRISTGATE_HOME, 'config.json');
+const cfgPath = () => path.join(env.HOLDPOINT_HOME, 'config.json');
 const patchCfg = (patch) => fs.writeFileSync(cfgPath(), JSON.stringify({ ...JSON.parse(fs.readFileSync(cfgPath(), 'utf8')), ...patch }));
 
 before(async () => {
@@ -54,7 +54,7 @@ before(async () => {
   srv = await startServer({ port: 0, host: '127.0.0.1', dataFile: path.join(tmp, 'data.json'),
     notify: async (topic, r) => notified.push({ topic, r }) });
   base = `http://127.0.0.1:${srv.port}`;
-  env = { WRISTGATE_HOME: path.join(tmp, 'home'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'), CODEX_HOME: path.join(tmp, 'no-codex') };
+  env = { HOLDPOINT_HOME: path.join(tmp, 'home'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'), CODEX_HOME: path.join(tmp, 'no-codex') };
   fs.mkdirSync(path.dirname(env.CLAUDE_SETTINGS), { recursive: true });
   fs.writeFileSync(env.CLAUDE_SETTINGS, JSON.stringify({ model: 'opus', hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'echo mine' }] }] } }));
   const r = await fetch(base + '/api/devices', { method: 'POST', body: '{"name":"Watch"}' });
@@ -66,7 +66,7 @@ after(async () => { await srv.close(); fs.rmSync(tmp, { recursive: true, force: 
 test('phone page is served', async () => {
   const r = await fetch(base + '/');
   assert.equal(r.status, 200);
-  assert.match(await r.text(), /Wristgate/);
+  assert.match(await r.text(), /Holdpoint/);
 });
 
 test('pair rejects bad code, then pairs and installs hook without clobbering settings', async () => {
@@ -78,9 +78,9 @@ test('pair rejects bad code, then pairs and installs hook without clobbering set
   assert.equal(s.model, 'opus');
   assert.equal(s.hooks.PreToolUse[0].hooks[0].command, 'echo mine');
   assert.equal(s.hooks.PermissionRequest.length, 1);
-  assert.match(s.hooks.PermissionRequest[0].hooks[0].command, /wristgate\.js" hook --agent claude$/);
+  assert.match(s.hooks.PermissionRequest[0].hooks[0].command, /holdpoint\.js" hook --agent claude$/);
   assert.equal(s.hooks.Stop.length, 1);
-  assert.match(s.hooks.Stop[0].hooks[0].command, /wristgate\.js" hook-stop --agent claude$/);
+  assert.match(s.hooks.Stop[0].hooks[0].command, /holdpoint\.js" hook-stop --agent claude$/);
   assert.equal(s.hooks.Stop[0].matcher, undefined);
   assert.equal((fs.statSync(cfgPath()).mode & 0o777), 0o600);
   // code is single-use
@@ -116,7 +116,7 @@ test('deny from device -> hook denies with message for Claude', async () => {
   await dev('POST', `/api/device/requests/${p.id}/decision`, { decision: 'deny' });
   const d = decision((await h.done).out);
   assert.equal(d.behavior, 'deny');
-  assert.match(d.message, /Denied from Wristgate/);
+  assert.match(d.message, /Denied from Holdpoint/);
 });
 
 test('no answer -> deny after timeout (default)', async () => {
@@ -300,7 +300,7 @@ test('linking a watch: its code joins it to the phone device, both see the same 
 
 test('PC-initiated pairing: PC shows a code, device claims it', async () => {
   const home2 = path.join(tmp, 'home2');
-  const env2 = { ...env, WRISTGATE_HOME: home2, CLAUDE_SETTINGS: path.join(tmp, 'claude2', 'settings.json') };
+  const env2 = { ...env, HOLDPOINT_HOME: home2, CLAUDE_SETTINGS: path.join(tmp, 'claude2', 'settings.json') };
   fs.mkdirSync(path.join(tmp, 'claude2'), { recursive: true });
   const p = spawn(process.execPath, [CLI, 'pair', '--relay', base, '--name', 'desk-pc'], { env: { ...process.env, ...env2 } });
   let out = ''; p.stdout.on('data', (d) => (out += d)); p.stderr.on('data', (d) => (out += d));

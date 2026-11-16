@@ -8,7 +8,7 @@ module Api {
     function relay() as String {
         var u = Application.Properties.getValue("relayUrl");
         if (u == null || !(u instanceof String) || (u as String).length() == 0) {
-            return "https://wristgate-relay.kiorte.workers.dev";
+            return "https://holdpoint-relay.kiorte.workers.dev";
         }
         return u as String;
     }

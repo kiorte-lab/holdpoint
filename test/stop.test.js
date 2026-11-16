@@ -7,9 +7,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { startServer } = require('../relay/server');
-const { lastAssistantText } = require('../cli/wristgate');
+const { lastAssistantText } = require('../cli/holdpoint');
 
-const CLI = path.join(__dirname, '..', 'cli', 'wristgate.js');
+const CLI = path.join(__dirname, '..', 'cli', 'holdpoint.js');
 let srv, base, tmp, env, device, transcript;
 
 const run = (args) => new Promise((resolve) => {
@@ -32,13 +32,13 @@ async function nextPending() {
   for (let i = 0; i < 100; i++) { const { body } = await dev('GET', '/api/device/pending'); if (body.pending.length) return body.pending[0]; await new Promise((r) => setTimeout(r, 50)); }
   throw new Error('nothing pending');
 }
-const patchCfg = (patch) => { const f = path.join(env.WRISTGATE_HOME, 'config.json'); fs.writeFileSync(f, JSON.stringify({ ...JSON.parse(fs.readFileSync(f, 'utf8')), ...patch })); };
+const patchCfg = (patch) => { const f = path.join(env.HOLDPOINT_HOME, 'config.json'); fs.writeFileSync(f, JSON.stringify({ ...JSON.parse(fs.readFileSync(f, 'utf8')), ...patch })); };
 
 before(async () => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'wgs-'));
   srv = await startServer({ port: 0, host: '127.0.0.1', notify: async () => {} });
   base = `http://127.0.0.1:${srv.port}`;
-  env = { WRISTGATE_HOME: path.join(tmp, 'wg'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'), CODEX_HOME: path.join(tmp, 'codex') };
+  env = { HOLDPOINT_HOME: path.join(tmp, 'wg'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'), CODEX_HOME: path.join(tmp, 'codex') };
   fs.mkdirSync(path.join(tmp, 'claude')); fs.mkdirSync(env.CODEX_HOME);
   device = await (await fetch(base + '/api/devices', { method: 'POST', body: '{}' })).json();
   assert.equal((await run(['pair', device.pairCode, '--relay', base, '--name', 'desk'])).code, 0);

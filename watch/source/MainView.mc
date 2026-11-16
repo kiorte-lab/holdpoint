@@ -29,11 +29,14 @@ class MainView extends WatchUi.View {
     var timer as Timer.Timer or Null = null;
     var notice as String = "";          // one-off message, e.g. "Paired desk-pc"
     var claiming as Boolean = false;
+    var touch as Boolean = false;        // touchscreen (Venu, Vivoactive) vs buttons only (Fenix, Forerunner)
 
     function initialize() {
         View.initialize();
         var a = Application.Properties.getValue("away");
         away = a == true;
+        var ds = System.getDeviceSettings();
+        touch = (ds has :isTouchScreen) && ds.isTouchScreen;
     }
 
     function onShow() as Void {
@@ -97,7 +100,7 @@ class MainView extends WatchUi.View {
             showPair = false;
             buzz();
         } else if (code == 404) {
-            notice = "Code expired - run wristgate pair again";
+            notice = "Code expired - run holdpoint pair again";
         } else {
             notice = errorText(code);
         }
@@ -305,7 +308,7 @@ class MainView extends WatchUi.View {
     }
 
     function openSettings() as Void {
-        var menu = new WatchUi.Menu2({ :title => "Wristgate" });
+        var menu = new WatchUi.Menu2({ :title => "Holdpoint" });
         menu.addItem(new WatchUi.ToggleMenuItem("Away", { :enabled => "Prompts come here", :disabled => "Prompts stay on the PC" }, :away, away, null));
         menu.addItem(new WatchUi.MenuItem("Pair or link", "Show a 6-digit code", :pair, null));
         WatchUi.pushView(menu, new SettingsDelegate(self), WatchUi.SLIDE_UP);
@@ -346,7 +349,7 @@ class MainView extends WatchUi.View {
         var r = current();
         if (r == null) {
             centre(dc, "All clear", Graphics.FONT_MEDIUM, Graphics.COLOR_WHITE, h * 0.40);
-            centre(dc, away ? "Waiting for your agent" : "Tap the pill to go Away", Graphics.FONT_XTINY, DIM, h * 0.58);
+            centre(dc, away ? "Waiting for your agent" : (touch ? "Tap the pill to go Away" : "Hold UP for Away"), Graphics.FONT_XTINY, DIM, h * 0.58);
             if (notice.length() > 0) {
                 centre(dc, notice.length() > 24 ? notice.substring(0, 23) + "..." : notice, Graphics.FONT_XTINY, GREEN, h * 0.72);
             }
@@ -381,7 +384,8 @@ class MainView extends WatchUi.View {
         }
         centre(dc, where, Graphics.FONT_XTINY, DIM, h * 0.70);
 
-        var hint = isStop ? "Tap to read & reply" : (r["locked"] == true ? "Tap to deny" : "Tap to answer");
+        var verb = touch ? "Tap" : "START";
+        var hint = isStop ? verb + " to read & reply" : (r["locked"] == true ? verb + " to deny" : verb + " to answer");
         if (pending.size() > 1) {
             hint = hint + "   " + (index + 1).toString() + "/" + pending.size().toString();
         }
@@ -390,12 +394,12 @@ class MainView extends WatchUi.View {
 
     function drawPair(dc as Graphics.Dc, w, h) as Void {
         centre(dc, "On your PC run", Graphics.FONT_XTINY, DIM, h * 0.27);
-        centre(dc, "wristgate pair", Graphics.FONT_SMALL, Graphics.COLOR_WHITE, h * 0.35);
+        centre(dc, "holdpoint pair", Graphics.FONT_SMALL, Graphics.COLOR_WHITE, h * 0.35);
         centre(dc, pairCode == null ? "......" : pairCode as String, Graphics.FONT_NUMBER_MEDIUM, ORANGE, h * 0.50);
         centre(dc, "or enter the PC's code in", Graphics.FONT_XTINY, DIM, h * 0.67);
-        centre(dc, "Garmin Connect > Wristgate", Graphics.FONT_XTINY, DIM, h * 0.74);
+        centre(dc, "Garmin Connect > Holdpoint", Graphics.FONT_XTINY, DIM, h * 0.74);
         if (showPair) {
-            centre(dc, "Tap when done", Graphics.FONT_XTINY, ORANGE, h * 0.82);
+            centre(dc, touch ? "Tap when done" : "START when done", Graphics.FONT_XTINY, ORANGE, h * 0.84);
         }
     }
 

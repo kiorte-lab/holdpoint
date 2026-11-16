@@ -1,12 +1,12 @@
 {
-  "name": "wristgate",
+  "name": "holdpoint",
   "version": "0.7.0",
   "description": "Approve Claude Code prompts and reply to finished turns from your Garmin watch or phone.",
   "author": {
     "name": "Simon Cassford"
   },
-  "homepage": "https://github.com/simoncassford-lab/wristgate",
-  "repository": "https://github.com/simoncassford-lab/wristgate",
+  "homepage": "https://github.com/simoncassford-lab/holdpoint",
+  "repository": "https://github.com/simoncassford-lab/holdpoint",
   "license": "MIT",
   "keywords": [
     "garmin",

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Node adapter for the relay. Self-host: `node relay/server.js` or the Dockerfile.
-// Env: PORT (8787), DATA_FILE (./wristgate-data.json), NTFY_BASE (https://ntfy.sh), PUBLIC_URL
+// Env: PORT (8787), DATA_FILE (./holdpoint-data.json), NTFY_BASE (https://ntfy.sh), PUBLIC_URL
 'use strict';
 const http = require('node:http');
 const fs = require('node:fs');
@@ -59,10 +59,10 @@ function startServer({ port = 0, dataFile = null, notify, host = '0.0.0.0' } = {
 
 if (require.main === module) {
   const port = Number(process.env.PORT) || 8787;
-  const dataFile = process.env.DATA_FILE || path.resolve('wristgate-data.json');
+  const dataFile = process.env.DATA_FILE || path.resolve('holdpoint-data.json');
   const notify = ntfyNotifier(process.env.NTFY_BASE || 'https://ntfy.sh', process.env.PUBLIC_URL || '');
   startServer({ port, dataFile, notify }).then(({ port }) =>
-    console.log(`wristgate relay on :${port} (data: ${dataFile})`));
+    console.log(`holdpoint relay on :${port} (data: ${dataFile})`));
 }
 
 module.exports = { startServer };

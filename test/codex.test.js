@@ -6,9 +6,9 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { startServer } = require('../relay/server');
-const { describe: summarise } = require('../cli/wristgate');
+const { describe: summarise } = require('../cli/holdpoint');
 
-const CLI = path.join(__dirname, '..', 'cli', 'wristgate.js');
+const CLI = path.join(__dirname, '..', 'cli', 'holdpoint.js');
 let srv, base, tmp, env, device;
 const codexFile = () => path.join(env.CODEX_HOME, 'hooks.json');
 
@@ -35,7 +35,7 @@ before(async () => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'wgc-'));
   srv = await startServer({ port: 0, host: '127.0.0.1', notify: async () => {} });
   base = `http://127.0.0.1:${srv.port}`;
-  env = { WRISTGATE_HOME: path.join(tmp, 'wg'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'), CODEX_HOME: path.join(tmp, 'codex') };
+  env = { HOLDPOINT_HOME: path.join(tmp, 'wg'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'), CODEX_HOME: path.join(tmp, 'codex') };
   fs.mkdirSync(path.join(tmp, 'claude')); fs.mkdirSync(env.CODEX_HOME);
   fs.writeFileSync(codexFile(), JSON.stringify({ hooks: { PreToolUse: [{ matcher: '^Bash$', hooks: [{ type: 'command', command: 'my-scanner' }] }] } }));
   device = await (await fetch(base + '/api/devices', { method: 'POST', body: '{}' })).json();

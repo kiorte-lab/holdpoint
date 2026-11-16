@@ -8,7 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { startServer } = require('../relay/server');
 
-const CLI = path.join(__dirname, '..', 'cli', 'wristgate.js');
+const CLI = path.join(__dirname, '..', 'cli', 'holdpoint.js');
 let srv, base, tmp, env, device;
 
 const run = (args) => new Promise((resolve) => {
@@ -36,7 +36,7 @@ before(async () => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'wga-'));
   srv = await startServer({ port: 0, host: '127.0.0.1', notify: async () => {} });
   base = `http://127.0.0.1:${srv.port}`;
-  env = { WRISTGATE_HOME: path.join(tmp, 'wg'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'),
+  env = { HOLDPOINT_HOME: path.join(tmp, 'wg'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'),
     CODEX_HOME: path.join(tmp, 'nocodex'), COPILOT_HOME: path.join(tmp, 'copilot'), GEMINI_HOME: path.join(tmp, 'gemini') };
   fs.mkdirSync(path.join(tmp, 'claude')); fs.mkdirSync(env.COPILOT_HOME); fs.mkdirSync(path.join(env.GEMINI_HOME, 'config'), { recursive: true });
   // someone else's Antigravity hook that must survive
@@ -50,7 +50,7 @@ test('detects Copilot and Antigravity and installs both in their own formats', a
   const r = await run(['pair', device.pairCode, '--relay', base, '--name', 'multi']);
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /Copilot CLI/); assert.match(r.out, /Antigravity CLI/);
-  const cp = JSON.parse(fs.readFileSync(path.join(env.COPILOT_HOME, 'hooks', 'wristgate.json'), 'utf8'));
+  const cp = JSON.parse(fs.readFileSync(path.join(env.COPILOT_HOME, 'hooks', 'holdpoint.json'), 'utf8'));
   assert.equal(cp.version, 1);
   assert.match(cp.hooks.permissionRequest[0].command, /hook --agent copilot$/);
   assert.equal(cp.hooks.permissionRequest[0].timeoutSec, 150);
@@ -58,9 +58,9 @@ test('detects Copilot and Antigravity and installs both in their own formats', a
   assert.match(cp.hooks.UserPromptSubmit[0].command, /hook-prompt --agent copilot$/);
   const ag = JSON.parse(fs.readFileSync(path.join(env.GEMINI_HOME, 'config', 'hooks.json'), 'utf8'));
   assert.equal(ag['my-linter'].PostToolUse[0].command, './lint.sh');
-  assert.equal(ag.wristgate.PreToolUse[0].matcher, '*');
-  assert.match(ag.wristgate.PreToolUse[0].command, /hook --agent antigravity$/);
-  assert.match(ag.wristgate.Stop[0].command, /hook-stop --agent antigravity$/);
+  assert.equal(ag.holdpoint.PreToolUse[0].matcher, '*');
+  assert.match(ag.holdpoint.PreToolUse[0].command, /hook --agent antigravity$/);
+  assert.match(ag.holdpoint.Stop[0].command, /hook-stop --agent antigravity$/);
 });
 
 test('Copilot permissionRequest (camelCase, toolArgs as JSON string) -> allow in Copilot dialect', async () => {
@@ -84,7 +84,7 @@ test('Copilot deny carries a reason for the agent', async () => {
   const out = JSON.parse(await h.done);
   assert.equal(out.behavior, 'deny');
   assert.equal(out.permissionDecision, 'deny');
-  assert.match(out.permissionDecisionReason, /Denied from Wristgate/);
+  assert.match(out.permissionDecisionReason, /Denied from Holdpoint/);
 });
 
 test('Antigravity PreToolUse: run_command approved from the wrist -> auto_approve', async () => {
@@ -110,7 +110,7 @@ test('Antigravity: locked command can only be denied, deny is a hard block', asy
   await dev('POST', `/api/device/requests/${p.id}/decision`, { decision: 'deny' });
   const out = JSON.parse(await h.done);
   assert.equal(out.decision, 'deny');
-  assert.match(out.reason, /Denied from Wristgate/);
+  assert.match(out.reason, /Denied from Holdpoint/);
 });
 
 test('Antigravity: at the desk, an explicit allow so its own policy applies', async () => {
@@ -144,11 +144,11 @@ test('Gemini-style AfterAgent text (prompt_response) shows on the card', async (
   assert.equal(await h.done, '');
 });
 
-test('a turn that was only a /wristgate command makes no finished card', async () => {
+test('a turn that was only a /holdpoint command makes no finished card', async () => {
   const t = path.join(tmp, 't.jsonl');
   fs.writeFileSync(t, [
-    { type: 'user', message: { role: 'user', content: '<command-name>/wristgate:on</command-name>' } },
-    { type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: 'Wristgate on.' }] } },
+    { type: 'user', message: { role: 'user', content: '<command-name>/holdpoint:on</command-name>' } },
+    { type: 'assistant', message: { role: 'assistant', content: [{ type: 'text', text: 'Holdpoint on.' }] } },
   ].map((x) => JSON.stringify(x)).join('\n'));
   const out = await hookRun('hook-stop', 'claude', { transcript_path: t, cwd: '/x' }).done;
   assert.equal(out, '');
@@ -158,9 +158,9 @@ test('a turn that was only a /wristgate command makes no finished card', async (
 test('aliases and unpair: gemini means antigravity; unpair removes only ours', async () => {
   const r = await run(['agents', 'claude,gemini']);
   assert.match(r.out, /Antigravity CLI/);
-  assert.ok(!fs.existsSync(path.join(env.COPILOT_HOME, 'hooks', 'wristgate.json')));
+  assert.ok(!fs.existsSync(path.join(env.COPILOT_HOME, 'hooks', 'holdpoint.json')));
   await run(['unpair']);
   const ag = JSON.parse(fs.readFileSync(path.join(env.GEMINI_HOME, 'config', 'hooks.json'), 'utf8'));
-  assert.equal(ag.wristgate, undefined);
+  assert.equal(ag.holdpoint, undefined);
   assert.equal(ag['my-linter'].PostToolUse[0].command, './lint.sh');
 });

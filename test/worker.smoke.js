@@ -10,7 +10,7 @@ const path = require('node:path');
 
 const WRANGLER = process.env.WRANGLER;
 const ROOT = path.join(__dirname, '..');
-const CLI = path.join(ROOT, 'cli', 'wristgate.js');
+const CLI = path.join(ROOT, 'cli', 'holdpoint.js');
 const PORT = 8790 + Math.floor(Math.random() * 100);
 const base = `http://127.0.0.1:${PORT}`;
 let wr, tmp, env, device;
@@ -50,7 +50,7 @@ async function nextPending() {
 
 before(async () => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'wgw-'));
-  env = { WRISTGATE_HOME: path.join(tmp, 'wg'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'), CODEX_HOME: path.join(tmp, 'nocodex'),
+  env = { HOLDPOINT_HOME: path.join(tmp, 'wg'), CLAUDE_SETTINGS: path.join(tmp, 'claude', 'settings.json'), CODEX_HOME: path.join(tmp, 'nocodex'),
     NO_PROXY: '127.0.0.1,localhost' };
   fs.mkdirSync(path.join(tmp, 'claude'));
   await startWrangler();
@@ -62,7 +62,7 @@ after(async () => { await stopWrangler(); fs.rmSync(tmp, { recursive: true, forc
 test('page served by the Worker', async () => {
   const r = await fetch(base + '/');
   assert.equal(r.status, 200);
-  assert.match(await r.text(), /Wristgate/);
+  assert.match(await r.text(), /Holdpoint/);
 });
 
 test('pair against the Worker', async () => {
@@ -91,7 +91,7 @@ test('deny and locked rules hold on the Worker', async () => {
 });
 
 test('timeout expires on the Worker', async () => {
-  const cfgFile = path.join(env.WRISTGATE_HOME, 'config.json');
+  const cfgFile = path.join(env.HOLDPOINT_HOME, 'config.json');
   const cfg = JSON.parse(fs.readFileSync(cfgFile, 'utf8'));
   fs.writeFileSync(cfgFile, JSON.stringify({ ...cfg, timeoutSec: 5 }));
   const out = await hook({ tool_name: 'Bash', tool_input: { command: 'make' } }).done;

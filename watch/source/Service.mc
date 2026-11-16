@@ -5,9 +5,9 @@ import Toybox.Lang;
 import Toybox.System;
 
 // Runs every 5 minutes with the app closed: counts what's waiting, and if something new
-// arrived while you're away, asks the watch to offer opening Wristgate.
+// arrived while you're away, asks the watch to offer opening Holdpoint.
 (:background)
-class WristgateService extends System.ServiceDelegate {
+class HoldpointService extends System.ServiceDelegate {
     function initialize() {
         ServiceDelegate.initialize();
     }

@@ -1,5 +1,5 @@
 <properties>
-    <property id="relayUrl" type="string">https://wristgate-relay.kiorte.workers.dev</property>
+    <property id="relayUrl" type="string">https://holdpoint-relay.kiorte.workers.dev</property>
     <property id="pairingCode" type="string"></property>
     <property id="presetsText" type="string">Continue, Run the tests, Commit and push, Summarise what you did</property>
     <property id="token" type="string"></property>
