@@ -24,6 +24,9 @@ class MainView extends WatchUi.View {
     var loaded as Boolean = false;
     var busy as Boolean = false;
     var timer as Timer.Timer or Null = null;
+    var visible as Boolean = false;
+    var version = null;                  // relay's change counter for this watch, for long-polling
+    var longPoll as Boolean = true;      // off if the phone times the long-poll out
     var notice as String = "";          // one-off message, e.g. "Paired desk-pc"
     var claiming as Boolean = false;
     var touch as Boolean = false;        // touchscreen (Venu, Vivoactive) vs buttons only (Fenix, Forerunner)
@@ -37,17 +40,28 @@ class MainView extends WatchUi.View {
     }
 
     function onShow() as Void {
+        visible = true;
         if (timer == null) {
             timer = new Timer.Timer();
         }
-        (timer as Timer.Timer).start(method(:poll), 4000, true);
         poll();
     }
 
     function onHide() as Void {
+        visible = false;
         if (timer != null) {
             (timer as Timer.Timer).stop();
         }
+    }
+
+    // Next check. The relay holds each request open until something changes (up to 20s),
+    // so the watch asks about three times a minute rather than every few seconds.
+    function later(ms as Number) as Void {
+        if (!visible || timer == null) {
+            return;
+        }
+        (timer as Timer.Timer).stop();
+        (timer as Timer.Timer).start(method(:poll), ms, false);
     }
 
     // ---------- networking ----------
@@ -61,7 +75,11 @@ class MainView extends WatchUi.View {
             Api.request(Communications.HTTP_REQUEST_METHOD_POST, "/api/devices", { "name" => "Watch" }, method(:onRegistered));
             return;
         }
-        Api.request(Communications.HTTP_REQUEST_METHOD_GET, "/api/device/pending", null, method(:onPending));
+        var path = "/api/device/pending";
+        if (longPoll && version != null) {
+            path = path + "?wait=20&v=" + version.toString();
+        }
+        Api.request(Communications.HTTP_REQUEST_METHOD_GET, path, null, method(:onPending));
         syncSettings();
     }
 
@@ -147,8 +165,10 @@ class MainView extends WatchUi.View {
             pairCode = data["pairCode"];
             clients = 0;
             status = "";
+            later(500);
         } else {
             status = errorText(code);
+            later(8000);
         }
         WatchUi.requestUpdate();
     }
@@ -163,11 +183,20 @@ class MainView extends WatchUi.View {
             return;
         }
         if (code != 200 || !(data instanceof Dictionary)) {
+            if (code == Communications.NETWORK_REQUEST_TIMED_OUT && longPoll && version != null) {
+                // The phone gave up on the held-open request: fall back to plain checks.
+                longPoll = false;
+                later(1000);
+                return;
+            }
             status = errorText(code);
             WatchUi.requestUpdate();
+            later(8000);
             return;
         }
         status = "";
+        version = data["version"];
+        later(longPoll ? 300 : 5000);
         var list = data["pending"];
         if (!(list instanceof Array)) {
             list = [];

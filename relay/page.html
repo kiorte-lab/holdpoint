@@ -217,9 +217,13 @@
   }
 
   let clientCount = -1;
-  async function refresh() {
+  let version = null;
+  // wait > 0: long-poll, so the relay answers as soon as something changes (instead of asking every 2s).
+  async function refresh(wait = 0) {
     try {
-      const j = await api('/api/device/pending');
+      const q = wait && version !== null ? `?wait=${wait}&v=${version}` : '';
+      const j = await api('/api/device/pending' + q);
+      version = j.version;
       $('dot').classList.add('live'); $('err').textContent = '';
       presets = j.presets || [];
       showAway(!!j.away);
@@ -267,8 +271,13 @@
       if (!token) await register(); else await newCode();
       await loadMe();
     } catch (e) { if (e.status === 401) { token = null; await register(); await loadMe(); } }
-    refresh();
-    setInterval(refresh, 2000);
+    // One long-poll at a time; back off for a few seconds after an error.
+    (async function loop() {
+      for (;;) {
+        const ok = await refresh(25).then(() => !$('err').textContent);
+        if (!ok || document.hidden) await new Promise((r) => setTimeout(r, document.hidden ? 15000 : 5000));
+      }
+    })();
     setInterval(() => updateTimers(), 1000);
     setInterval(loadMe, 15000);
   })();

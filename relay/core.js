@@ -22,6 +22,16 @@ function createRelay({ initialState = null, persist = () => {}, notify = async (
   const pcPairs = new Map();   // id -> { code, pollHash, name, expires, result }  (PC shows code, watch/phone claims it)
   const requests = new Map(); // id -> request
   const waiters = new Map(); // id -> Set<fn>
+  // Per-device change counter. Watches and the phone page long-poll /api/device/pending with the
+  // version they last saw, and the relay answers as soon as anything for that device changes.
+  const versions = new Map();   // deviceId -> number
+  const clientDevice = new Map(); // clientId -> deviceId (kept after unpair, to know whom to wake)
+  function bump(deviceId) {
+    if (!deviceId) return;
+    versions.set(deviceId, (versions.get(deviceId) || 0) + 1);
+    const ws = waiters.get('dev:' + deviceId);
+    if (ws) { for (const fn of [...ws]) fn(); waiters.delete('dev:' + deviceId); }
+  }
 
   if (initialState) Object.assign(state, initialState);
   // token hash -> id, so auth is a map lookup rather than a scan
@@ -31,11 +41,15 @@ function createRelay({ initialState = null, persist = () => {}, notify = async (
     index.device = new Map(Object.entries(state.devices).flatMap(([id, d]) =>
       [d.tokenHash, ...(d.extraTokens || [])].map((h) => [h, id])));
     index.client = new Map(Object.entries(state.clients).map(([id, c]) => [c.tokenHash, id]));
+    for (const [id, c] of Object.entries(state.clients)) clientDevice.set(id, c.deviceId);
   };
   reindex();
   // persist(state, change): change = { kind: 'device'|'client', id, rec|null } for stores that write per record.
   const save = (kind, id) => {
+    const before = kind === 'client' ? clientDevice.get(id) : null;
     reindex();
+    if (kind === 'device') bump(id);
+    else { bump(before); const now = state.clients[id]?.deviceId; if (now !== before) bump(now); }
     const rec = (kind === 'device' ? state.devices : state.clients)[id] || null;
     return persist(state, { kind, id, rec });
   };
@@ -75,6 +89,7 @@ function createRelay({ initialState = null, persist = () => {}, notify = async (
     r.reply = reply;
     r.decidedAt = now();
     r.decidedBy = by;
+    bump(r.deviceId);
     const ws = waiters.get(r.id);
     if (ws) { for (const fn of ws) fn(); waiters.delete(r.id); }
   }
@@ -187,6 +202,21 @@ function createRelay({ initialState = null, persist = () => {}, notify = async (
         return json({ ok: true, ntfyTopic: dev.ntfyTopic, name: dev.name, away: dev.away, presets: dev.presets });
       }
       if (m === 'GET' && p === '/api/device/pending') {
+        // Long-poll: with ?v=<version you have>&wait=<s>, hold the request until something changes.
+        const seen = url.searchParams.get('v');
+        const waitS = Math.min(Math.max(Number(url.searchParams.get('wait')) || 0, 0), MAX_WAIT_S);
+        if (seen !== null && waitS > 0 && String(versions.get(a.id) || 0) === seen) {
+          // Wake early for the soonest expiry, so an unanswered card disappears on time.
+          let soonest = Infinity;
+          for (const r of requests.values()) if (r.deviceId === a.id && r.status === 'pending') soonest = Math.min(soonest, r.expires);
+          const key = 'dev:' + a.id;
+          await new Promise((resolve) => {
+            const t = setTimeout(done, Math.min(waitS * 1000, Math.max(soonest - now(), 0) + 50));
+            function done() { clearTimeout(t); waiters.get(key)?.delete(done); resolve(); }
+            if (!waiters.has(key)) waiters.set(key, new Set());
+            waiters.get(key).add(done);
+          });
+        }
         const list = [];
         for (const r of requests.values()) {
           expireIfDue(r);
@@ -194,7 +224,8 @@ function createRelay({ initialState = null, persist = () => {}, notify = async (
         }
         list.sort((x, y) => x.created - y.created);
         const clients = Object.values(state.clients).filter((c) => c.deviceId === a.id).length;
-        return json({ pending: list, clients, away: !!dev.away, presets: dev.presets || DEFAULT_PRESETS, serverTime: now() });
+        return json({ pending: list, clients, away: !!dev.away, presets: dev.presets || DEFAULT_PRESETS, serverTime: now(),
+          version: versions.get(a.id) || 0 });
       }
       const dm = p.match(/^\/api\/device\/requests\/([\w-]+)\/decision$/);
       if (m === 'POST' && dm) {
@@ -298,6 +329,7 @@ function createRelay({ initialState = null, persist = () => {}, notify = async (
           created: now(), expires: now() + timeout * 1000,
           status: 'pending' };
         requests.set(r.id, r);
+        bump(r.deviceId);
         if (dev.ntfyTopic) notify(dev.ntfyTopic, r).catch(() => {});
         return json({ id: r.id, expires: r.expires }, 201);
       }
