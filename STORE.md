@@ -10,7 +10,7 @@ Copy these into the Connect IQ developer dashboard (apps.garmin.com/developer) w
 | App type | Device app (glance on supported watches) |
 | Category | Tools / Productivity |
 | Price | Free |
-| Privacy policy URL | https://holdpoint-relay.kiorte.workers.dev/privacy |
+| Privacy policy URL | https://holdpoint.kiorte.com/privacy |
 | Support / website URL | https://github.com/kiorte-lab/holdpoint |
 | Permissions shown | Communications (talks to the relay), Background (checks for waiting requests every 5 minutes) |
 

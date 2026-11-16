@@ -4,6 +4,8 @@ compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 preview_urls = false
+# Public address. The old workers.dev address stays on so older installs keep working.
+routes = [{ pattern = "holdpoint.kiorte.com", custom_domain = true }]
 
 [[durable_objects.bindings]]
 name = "RELAY"

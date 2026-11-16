@@ -8,8 +8,9 @@ module Api {
     function relay() as String {
         var u = Application.Properties.getValue("relayUrl");
         // Empty, or left over from the app's old name: use the current relay.
-        if (u == null || !(u instanceof String) || (u as String).length() == 0 || (u as String).find("wristgate-relay") != null) {
-            return "https://holdpoint-relay.kiorte.workers.dev";
+        if (u == null || !(u instanceof String) || (u as String).length() == 0 || (u as String).find("wristgate-relay") != null
+                || (u as String).find("holdpoint-relay.kiorte.workers.dev") != null) {
+            return "https://holdpoint.kiorte.com";
         }
         return u as String;
     }
@@ -19,9 +20,12 @@ module Api {
     function migrate() as Void {
         var u = Application.Properties.getValue("relayUrl");
         if (u instanceof String && (u as String).find("wristgate-relay") != null) {
-            Application.Properties.setValue("relayUrl", "https://holdpoint-relay.kiorte.workers.dev");
+            Application.Properties.setValue("relayUrl", "https://holdpoint.kiorte.com");
             Application.Properties.setValue("token", "");
             Application.Properties.setValue("lastCount", 0);
+        } else if (u instanceof String && (u as String).find("holdpoint-relay.kiorte.workers.dev") != null) {
+            // Same relay under its new name: the watch stays paired.
+            Application.Properties.setValue("relayUrl", "https://holdpoint.kiorte.com");
         }
     }
 

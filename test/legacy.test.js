@@ -31,3 +31,16 @@ test('pair cleans up old wristgate hooks', async () => {
   assert.ok(all.includes('holdpoint.js'), 'new hooks present');
   assert.ok(JSON.stringify(s.hooks.PermissionRequest).includes('echo mine'), 'user hooks kept');
 });
+
+test('a config on the old workers.dev relay moves to holdpoint.kiorte.com', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hp-relay-'));
+  const home = path.join(tmp, 'hp'); fs.mkdirSync(home);
+  fs.writeFileSync(path.join(home, 'config.json'), JSON.stringify({ relay: 'https://holdpoint-relay.kiorte.workers.dev', clientToken: 't', agents: ['claude'], enabled: true }));
+  const out = await new Promise((res) => {
+    const p = spawn(process.execPath, [path.join(__dirname, '../cli/holdpoint.js'), 'status'], { env: { ...process.env, HOLDPOINT_HOME: home, CLAUDE_SETTINGS: path.join(tmp, 's.json'), CODEX_HOME: path.join(tmp, 'c') } });
+    let o = ''; p.stdout.on('data', (d) => (o += d)); p.on('exit', () => res(o));
+  });
+  const cfg = JSON.parse(fs.readFileSync(path.join(home, 'config.json'), 'utf8'));
+  assert.strictEqual(cfg.relay, 'https://holdpoint.kiorte.com');
+  assert.strictEqual(cfg.clientToken, 't', 'pairing kept');
+});

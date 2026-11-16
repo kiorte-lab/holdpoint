@@ -13,7 +13,9 @@ const HOME = process.env.HOLDPOINT_HOME || path.join(os.homedir(), '.config', 'h
 const CONFIG = path.join(HOME, 'config.json');
 const INSTALLED = path.join(HOME, 'holdpoint.js');
 const HOOK_EVENT = 'PermissionRequest';
-const DEFAULT_RELAY = process.env.HOLDPOINT_DEFAULT_RELAY || 'https://holdpoint-relay.kiorte.workers.dev';
+const DEFAULT_RELAY = process.env.HOLDPOINT_DEFAULT_RELAY || 'https://holdpoint.kiorte.com';
+// The public relay's earlier address. Same server, so pairings carry over: just switch to the new name.
+const OLD_RELAYS = ['https://holdpoint-relay.kiorte.workers.dev'];
 const HOOK_TAG = 'holdpoint.js" hook';
 const LEGACY_TAG = 'wristgate.js" hook'; // the app's old name; cleaned up on pair/unpair
 
@@ -103,6 +105,15 @@ async function api(cfg, method, p, body) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), { status: r.status });
   return j;
+}
+
+function loadConfig() {
+  const cfg = readJson(CONFIG, null);
+  if (cfg && OLD_RELAYS.includes(String(cfg.relay).replace(/\/$/, ''))) {
+    cfg.relay = DEFAULT_RELAY;
+    try { writeJson(CONFIG, cfg, 0o600); } catch {}
+  }
+  return cfg;
 }
 
 // ---------- Claude Code settings ----------
@@ -299,7 +310,7 @@ async function hook(agent = 'claude') {
   // Any failure here must fall through to Claude Code's normal prompt: exit 0, no output.
   let input = '';
   for await (const c of process.stdin) input += c;
-  const cfg = readJson(CONFIG, null);
+  const cfg = loadConfig();
   if (!cfg || !cfg.enabled || !cfg.clientToken) return;
   cfgRef = cfg;
   let ev;
@@ -404,7 +415,7 @@ async function hookStop(agent = 'claude') {
   // Exit 0 with no output = the agent stops normally. Only a reply from the wrist keeps it going.
   let input = '';
   for await (const c of process.stdin) input += c;
-  const cfg = readJson(CONFIG, null);
+  const cfg = loadConfig();
   if (!cfg || !cfg.enabled || !cfg.clientToken || cfg.stopCards === false) return;
   let ev;
   try { ev = JSON.parse(input); } catch { return; }
@@ -448,7 +459,7 @@ async function hookStop(agent = 'claude') {
 async function hookPrompt(agent = 'claude') {
   let input = '';
   for await (const c of process.stdin) input += c;
-  const cfg = readJson(CONFIG, null);
+  const cfg = loadConfig();
   if (!cfg || !cfg.enabled || !cfg.clientToken) return;
   if (wrongSource(cfg, AGENTS[agent] ? agent : 'claude')) return;
   try {
@@ -495,7 +506,7 @@ async function pairWait() {
 async function main() {
   const a = args(process.argv.slice(2));
   const cmd = a._[0];
-  const cfg = readJson(CONFIG, null);
+  const cfg = loadConfig();
 
   if (cmd === 'hook') { const ag = AGENT_ALIASES[a.agent] || a.agent; await hook(ag); return passThrough(ag); }
   if (cmd === 'hook-stop') return hookStop(AGENT_ALIASES[a.agent] || a.agent);
