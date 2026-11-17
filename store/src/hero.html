@@ -1,0 +1,152 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1440px;height:720px;overflow:hidden;font-family:Inter,Roboto,sans-serif;color:#fff;
+ background:radial-gradient(circle at 1080px 380px,rgba(217,119,87,.28),rgba(217,119,87,0) 420px),
+ radial-gradient(circle at 200px 700px,rgba(47,191,113,.10),rgba(0,0,0,0) 500px),#0d0f14;position:relative}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(circle at 900px 360px,#000,transparent 75%)}
+.copy{position:absolute;left:96px;top:160px;width:540px}
+.kicker{font-size:22px;font-weight:600;letter-spacing:.14em;color:#D97757;text-transform:uppercase}
+h1{font-family:'Inter Display',Inter;font-size:74px;line-height:1;font-weight:700;margin-top:18px;letter-spacing:-.02em}
+h1 span{color:#D97757}
+p{font-size:28px;line-height:1.4;color:#a9afbd;margin-top:26px}
+.chips{display:flex;gap:14px;margin-top:38px}
+.chip{font-size:22px;font-weight:600;padding:10px 22px;border-radius:999px;border:2px solid}
+.ok{color:#2FBF71;border-color:rgba(47,191,113,.55);background:rgba(47,191,113,.08)}
+.no{color:#E5484D;border-color:rgba(229,72,77,.55);background:rgba(229,72,77,.08)}
+.re{color:#D97757;border-color:rgba(217,119,87,.55);background:rgba(217,119,87,.08)}
+/* terminal */
+.term{position:absolute;left:668px;top:92px;width:330px;border-radius:14px;background:#161a22;border:1px solid #2a303c;box-shadow:0 30px 60px rgba(0,0,0,.5);font-family:'DejaVu Sans Mono',monospace;font-size:17px;opacity:.92}
+.bar{height:36px;border-bottom:1px solid #2a303c;display:flex;align-items:center;gap:8px;padding-left:16px}
+.bar i{width:12px;height:12px;border-radius:50%;background:#3a404c;display:block}
+.bar b{font-family:Inter;font-weight:500;font-size:14px;color:#6c7383;margin-left:12px}
+.tb{padding:18px 20px 22px;line-height:1.75;color:#c9ced8}
+.dim{color:#5f6676}.or{color:#D97757}.gr{color:#2FBF71}
+.box{border:1px solid #D97757;border-radius:8px;padding:10px 14px;margin-top:10px;background:rgba(217,119,87,.06)}
+/* link */
+svg.link{position:absolute;left:0;top:0}
+/* watch */
+.watch{position:absolute;left:880px;top:0;width:440px;height:720px}
+.strap{position:absolute;left:105px;width:230px;background:linear-gradient(90deg,#1b1e25,#2a2e37 50%,#1b1e25);}
+.s1{top:-20px;height:200px;border-radius:0 0 40px 40px}
+.s2{bottom:-20px;height:200px;border-radius:40px 40px 0 0}
+.s1:after,.s2:after{content:"";position:absolute;left:30px;right:30px;top:20px;bottom:20px;border-left:2px dashed rgba(255,255,255,.05);border-right:2px dashed rgba(255,255,255,.05)}
+.case{position:absolute;left:30px;top:170px;width:380px;height:380px;border-radius:50%;
+ background:conic-gradient(from 210deg,#5c6270,#2b2f38,#8a909c,#2b2f38,#5c6270);box-shadow:0 40px 80px rgba(0,0,0,.6),inset 0 0 0 2px rgba(255,255,255,.08)}
+.bezel{position:absolute;inset:16px;border-radius:50%;background:#0b0c0f;box-shadow:inset 0 0 0 2px #23262e}
+.tick{position:absolute;left:50%;top:50%;width:3px;height:10px;background:#3a3f4a;transform-origin:50% 0}
+.screen{position:absolute;inset:34px;border-radius:50%;overflow:hidden;background:#000}
+.screen img{width:100%;height:100%;display:block;transform:scale(1.02)}
+.glare{position:absolute;inset:34px;border-radius:50%;background:linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,0) 45%)}
+.btn{position:absolute;width:18px;height:46px;border-radius:6px;background:linear-gradient(90deg,#3d424d,#6b717e)}
+.foot{position:absolute;left:96px;bottom:54px;font-size:18px;color:#5f6676}
+</style></head><body>
+<div class="grid"></div>
+<div class="copy">
+ <div class="kicker">Holdpoint</div>
+ <h1>Step away.<br><span>Stay in charge.</span></h1>
+ <p>Your AI coding agent's prompts on your Garmin watch, wherever you are.</p>
+ <div class="chips"><div class="chip ok">Approve</div><div class="chip no">Deny</div><div class="chip re">Reply</div></div>
+</div>
+<div class="term">
+ <div class="bar"><i></i><i></i><i></i><b>~/shop-api</b></div>
+ <div class="tb">
+  <div><span class="dim">●</span> Fixed checkout tests</div>
+  <div class="box"><span class="or">Allow Bash?</span><br>npm test<br><span class="dim">↳ sent to watch…</span></div>
+ </div>
+</div>
+<svg class="w" width="440" height="720" viewBox="0 0 440 720" style="position:absolute;left:880px;top:0">
+<defs>
+ <linearGradient id="strap" x1="0" x2="1"><stop offset="0" stop-color="#121419"/><stop offset=".18" stop-color="#23262e"/><stop offset=".5" stop-color="#2b2f38"/><stop offset=".82" stop-color="#23262e"/><stop offset="1" stop-color="#121419"/></linearGradient>
+ <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9aa0ab"/><stop offset=".35" stop-color="#4a4f5a"/><stop offset=".6" stop-color="#2a2e36"/><stop offset="1" stop-color="#6d7380"/></linearGradient>
+ <linearGradient id="lug" x1="0" x2="1"><stop offset="0" stop-color="#3a3f49"/><stop offset=".5" stop-color="#7d838f"/><stop offset="1" stop-color="#2c3038"/></linearGradient>
+ <linearGradient id="btn" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8b919c"/><stop offset=".5" stop-color="#4b505a"/><stop offset="1" stop-color="#2b2f37"/></linearGradient>
+ <radialGradient id="shadow"><stop offset=".7" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+ <linearGradient id="glare" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <clipPath id="scr"><circle cx="220" cy="360" r="156"/></clipPath>
+</defs>
+<path d="M126.0 210 L134.0 -10 L306.0 -10 L314.0 210 Z" fill="url(#strap)"/>
+<path d="M126.0 510 L134.0 730 L306.0 730 L314.0 510 Z" fill="url(#strap)"/>
+<line x1="220" y1="160" x2="220" y2="-10" stroke="#000" stroke-opacity=".25" stroke-width="2"/>
+<line x1="220" y1="560" x2="220" y2="730" stroke="#000" stroke-opacity=".25" stroke-width="2"/>
+<ellipse cx="220" cy="610" rx="7" ry="9" fill="#08090b"/><ellipse cx="220" cy="612" rx="7" ry="9" fill="none" stroke="#3a3e47" stroke-width="1" stroke-dasharray="0 14 14"/>
+<ellipse cx="220" cy="648" rx="7" ry="9" fill="#08090b"/><ellipse cx="220" cy="650" rx="7" ry="9" fill="none" stroke="#3a3e47" stroke-width="1" stroke-dasharray="0 14 14"/>
+<ellipse cx="220" cy="686" rx="7" ry="9" fill="#08090b"/><ellipse cx="220" cy="688" rx="7" ry="9" fill="none" stroke="#3a3e47" stroke-width="1" stroke-dasharray="0 14 14"/>
+<rect x="130.0" y="40" width="180" height="26" rx="5" fill="#1a1d23" stroke="#30343d"/>
+<path d="M124.0 240 L86.0 240 L96.0 160 Q96.0 146 110.0 146 Q124.0 146 124.0 160 Z" fill="url(#lug)" stroke="#1d2027"/>
+<path d="M124.0 480 L86.0 480 L96.0 560 Q96.0 574 110.0 574 Q124.0 574 124.0 560 Z" fill="url(#lug)" stroke="#1d2027"/>
+<path d="M316.0 240 L354.0 240 L344.0 160 Q344.0 146 330.0 146 Q316.0 146 316.0 160 Z" fill="url(#lug)" stroke="#1d2027"/>
+<path d="M316.0 480 L354.0 480 L344.0 560 Q344.0 574 330.0 574 Q316.0 574 316.0 560 Z" fill="url(#lug)" stroke="#1d2027"/>
+<circle cx="220" cy="378" r="220" fill="url(#shadow)"/>
+<g transform="translate(381.1 267.0) rotate(-30)"><rect x="-6" y="-21" width="26" height="42" rx="7" fill="url(#btn)" stroke="#20232a"/><line x1="8" y1="-15" x2="8" y2="15" stroke="#fff" stroke-opacity=".12"/><line x1="13" y1="-15" x2="13" y2="15" stroke="#000" stroke-opacity=".25"/></g>
+<g transform="translate(381.1 453.0) rotate(30)"><rect x="-6" y="-21" width="26" height="42" rx="7" fill="url(#btn)" stroke="#20232a"/><line x1="8" y1="-15" x2="8" y2="15" stroke="#fff" stroke-opacity=".12"/><line x1="13" y1="-15" x2="13" y2="15" stroke="#000" stroke-opacity=".25"/></g>
+<g transform="translate(58.9 453.0) rotate(150)"><rect x="-6" y="-21" width="26" height="42" rx="7" fill="url(#btn)" stroke="#20232a"/><line x1="8" y1="-15" x2="8" y2="15" stroke="#fff" stroke-opacity=".12"/><line x1="13" y1="-15" x2="13" y2="15" stroke="#000" stroke-opacity=".25"/></g>
+<g transform="translate(58.9 267.0) rotate(210)"><rect x="-6" y="-21" width="26" height="42" rx="7" fill="url(#btn)" stroke="#20232a"/><line x1="8" y1="-15" x2="8" y2="15" stroke="#fff" stroke-opacity=".12"/><line x1="13" y1="-15" x2="13" y2="15" stroke="#000" stroke-opacity=".25"/></g>
+<circle cx="220" cy="360" r="190" fill="url(#metal)"/>
+<circle cx="220" cy="360" r="189" fill="none" stroke="#fff" stroke-opacity=".18"/>
+<circle cx="220" cy="360" r="172" fill="#0b0c0f" stroke="#2a2d35" stroke-width="2"/>
+<line x1="220.0" y1="192.0" x2="220.0" y2="204.0" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="237.6" y1="192.9" x2="236.8" y2="199.9" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="254.9" y1="195.7" x2="253.5" y2="202.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="271.9" y1="200.2" x2="269.8" y2="206.9" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="288.3" y1="206.5" x2="285.5" y2="212.9" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="304.0" y1="214.5" x2="298.0" y2="224.9" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="318.7" y1="224.1" x2="314.6" y2="229.7" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="332.4" y1="235.2" x2="327.7" y2="240.4" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="344.8" y1="247.6" x2="339.6" y2="252.3" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="355.9" y1="261.3" x2="350.3" y2="265.4" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="365.5" y1="276.0" x2="355.1" y2="282.0" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="373.5" y1="291.7" x2="367.1" y2="294.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="379.8" y1="308.1" x2="373.1" y2="310.2" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="384.3" y1="325.1" x2="377.5" y2="326.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="387.1" y1="342.4" x2="380.1" y2="343.2" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="388.0" y1="360.0" x2="376.0" y2="360.0" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="387.1" y1="377.6" x2="380.1" y2="376.8" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="384.3" y1="394.9" x2="377.5" y2="393.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="379.8" y1="411.9" x2="373.1" y2="409.8" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="373.5" y1="428.3" x2="367.1" y2="425.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="365.5" y1="444.0" x2="355.1" y2="438.0" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="355.9" y1="458.7" x2="350.3" y2="454.6" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="344.8" y1="472.4" x2="339.6" y2="467.7" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="332.4" y1="484.8" x2="327.7" y2="479.6" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="318.7" y1="495.9" x2="314.6" y2="490.3" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="304.0" y1="505.5" x2="298.0" y2="495.1" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="288.3" y1="513.5" x2="285.5" y2="507.1" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="271.9" y1="519.8" x2="269.8" y2="513.1" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="254.9" y1="524.3" x2="253.5" y2="517.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="237.6" y1="527.1" x2="236.8" y2="520.1" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="220.0" y1="528.0" x2="220.0" y2="516.0" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="202.4" y1="527.1" x2="203.2" y2="520.1" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="185.1" y1="524.3" x2="186.5" y2="517.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="168.1" y1="519.8" x2="170.2" y2="513.1" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="151.7" y1="513.5" x2="154.5" y2="507.1" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="136.0" y1="505.5" x2="142.0" y2="495.1" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="121.3" y1="495.9" x2="125.4" y2="490.3" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="107.6" y1="484.8" x2="112.3" y2="479.6" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="95.2" y1="472.4" x2="100.4" y2="467.7" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="84.1" y1="458.7" x2="89.7" y2="454.6" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="74.5" y1="444.0" x2="84.9" y2="438.0" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="66.5" y1="428.3" x2="72.9" y2="425.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="60.2" y1="411.9" x2="66.9" y2="409.8" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="55.7" y1="394.9" x2="62.5" y2="393.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="52.9" y1="377.6" x2="59.9" y2="376.8" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="52.0" y1="360.0" x2="64.0" y2="360.0" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="52.9" y1="342.4" x2="59.9" y2="343.2" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="55.7" y1="325.1" x2="62.5" y2="326.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="60.2" y1="308.1" x2="66.9" y2="310.2" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="66.5" y1="291.7" x2="72.9" y2="294.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="74.5" y1="276.0" x2="84.9" y2="282.0" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="84.1" y1="261.3" x2="89.7" y2="265.4" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="95.2" y1="247.6" x2="100.4" y2="252.3" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="107.6" y1="235.2" x2="112.3" y2="240.4" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="121.3" y1="224.1" x2="125.4" y2="229.7" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="136.0" y1="214.5" x2="142.0" y2="224.9" stroke="#6a707c" stroke-width="2.5"/>
+<line x1="151.7" y1="206.5" x2="154.5" y2="212.9" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="168.1" y1="200.2" x2="170.2" y2="206.9" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="185.1" y1="195.7" x2="186.5" y2="202.5" stroke="#3a3f4a" stroke-width="1.5"/>
+<line x1="202.4" y1="192.9" x2="203.2" y2="199.9" stroke="#3a3f4a" stroke-width="1.5"/>
+<circle cx="220" cy="360" r="157" fill="#000"/>
+<image href="2-approve.png" x="61" y="201" width="318" height="318" clip-path="url(#scr)"/>
+<circle cx="220" cy="360" r="156" fill="url(#glare)"/>
+</svg>
+
+</body></html>
